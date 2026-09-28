@@ -104,6 +104,15 @@ def is_full(board: list[str]) -> bool:
     return EMPTY not in board
 
 
+def outcome_message(result: str | None) -> str:
+    """Return the user-facing message for a completed game."""
+    if result == PLAYER:
+        return "  You win!\n"
+    if result == COMPUTER:
+        return "  Computer wins!\n"
+    return "  It's a draw!\n"
+
+
 def computer_move(board: list[str]) -> int:
     """Choose a square for the computer.
 
@@ -153,12 +162,11 @@ def play() -> int:
     print(render(board))
 
     if result == PLAYER:
-        print(art.green(f"  {PLAYER} wins!\n"))
+        print(art.green(outcome_message(result)))
         return 100
     elif result == COMPUTER:
-        print(art.red(f"  {COMPUTER} wins!\n"))
+        print(art.red(outcome_message(result)))
         return 0
     else:
-        print(art.yellow("  It's a draw!\n"))
+        print(art.yellow(outcome_message(result)))
         return 0
-
