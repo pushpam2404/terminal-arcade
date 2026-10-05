@@ -133,8 +133,14 @@ def play() -> int:
         result = winner(board)
 
     print(render(board))
-    print(f"  {result} wins!\n")
 
     if result == PLAYER:
+        print(art.green(f"  {PLAYER} wins!\n"))
         return 100
-    return 0
+    elif result == COMPUTER:
+        print(art.red(f"  {COMPUTER} wins!\n"))
+        return 0
+    else:
+        print(art.yellow("  It's a draw!\n"))
+        return 0
+
