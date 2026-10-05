@@ -52,3 +52,18 @@ def test_render_shows_numbers_for_empty_squares():
     output = ttt.render(ttt.new_board())
     for number in range(1, 10):
         assert str(number) in output
+
+
+def test_outcome_messages_are_formatted(capsys):
+    from unittest.mock import patch
+
+    # Player wins
+    with patch("arcade.games.tictactoe.ask_int", side_effect=[1, 2, 3]):
+        with patch("arcade.games.tictactoe.computer_move", side_effect=[3, 4]):
+            board = ["X", "X", " ", " ", " ", " ", " ", " ", " "]
+            with patch("arcade.games.tictactoe.new_board", return_value=board):
+                score = ttt.play()
+                assert score == 100
+                out = capsys.readouterr().out
+                assert "X wins!" in out
+
