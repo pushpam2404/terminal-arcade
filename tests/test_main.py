@@ -35,3 +35,19 @@ def test_the_menu_offers_high_scores_and_quit(capsys):
     output = capsys.readouterr().out
     assert "High scores" in output
     assert "Quit" in output
+
+
+def test_version_flag_outputs_version_and_exits():
+    import subprocess
+    import sys
+    from arcade import __version__
+
+    for flag in ["--version", "-V"]:
+        result = subprocess.run(
+            [sys.executable, "-m", "arcade", flag],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == f"terminal-arcade {__version__}"
+
