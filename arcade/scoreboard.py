@@ -7,6 +7,7 @@ closing the terminal. The file is created the first time a score is saved.
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -100,10 +101,15 @@ def top_scores(
     if game is not None:
         scores = [s for s in scores if s.get("game") == game]
 
-    # Some older score files stored the score as text instead of a number,
-    # which made this blow up with a TypeError. Converting to str first stops
-    # the crash.
-    ranked = sorted(scores, key=lambda s: str(s.get("score", 0)), reverse=True)
+    def numeric_score(entry: dict[str, Any]) -> float:
+        """Read legacy numeric strings, treating invalid scores as zero."""
+        try:
+            score = float(entry.get("score", 0))
+        except (TypeError, ValueError, OverflowError):
+            return 0.0
+        return score if math.isfinite(score) else 0.0
+
+    ranked = sorted(scores, key=numeric_score, reverse=True)
     return ranked[:limit]
 
 

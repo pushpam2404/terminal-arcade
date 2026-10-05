@@ -1,5 +1,9 @@
 """Tests for the scoreboard."""
 
+import json
+
+import pytest
+
 from arcade import scoreboard
 
 
@@ -73,3 +77,21 @@ def test_the_scoreboard_table_includes_the_player_and_score():
     )
     assert "asha" in table
     assert "70" in table
+
+
+def test_top_scores_compares_numbers_and_legacy_strings(tmp_path):
+    path = tmp_path / "scores.json"
+    path.write_text(json.dumps([
+        {"score": 9}, {"score": 100}, {"score": "50"}, {"score": 20},
+    ]), encoding="utf-8")
+    assert [entry["score"] for entry in scoreboard.top_scores(path=path)] == [100, "50", 20, 9]
+
+
+@pytest.mark.parametrize("bad_score", ["not a score", None, [], {}, "NaN", "Infinity"])
+def test_top_scores_handles_invalid_scores(tmp_path, bad_score):
+    path = tmp_path / "scores.json"
+    path.write_text(json.dumps([
+        {"score": bad_score, "player": "invalid"},
+        {"score": 9, "player": "valid"},
+    ]), encoding="utf-8")
+    assert [entry["player"] for entry in scoreboard.top_scores(path=path)] == ["valid", "invalid"]
