@@ -191,6 +191,11 @@ Maintained by **OS & DevX**, GITHUB Community GITAM.
 | Mon, Oct 12 | PR Debug Clinic #1 — bring a broken branch |
 | Wed, Oct 21 | PR Debug Clinic #2 |
 
+
+## Contribution Test
+This change verifies the contribution workflow for the event.
+
+
 ## License
 
 [MIT](LICENSE)
