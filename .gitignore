@@ -7,10 +7,14 @@ dist/
 
 # Virtual environments
 .venv/
+.venv*/
 venv/
+venv*/
 env/
 
 # Testing
+.tox/
+.nox/
 .pytest_cache/
 .coverage
 coverage.xml
@@ -22,11 +26,20 @@ htmlcov/
 .vscode/
 .idea/
 *.swp
+*.sublime-*
+.vim/
+*~
 
 # OS
 .DS_Store
+.AppleDouble
+.Spotlight-V100
 Thumbs.db
 
 # Your local high scores — these are yours, not the project's
 .terminal-arcade/
 scores.json
+
+# Logs and local Python version
+*.log
+.python-version
