@@ -49,6 +49,48 @@ python3 -m arcade
 
 ---
 
+## What it looks like
+
+These excerpts were captured while playing with `NO_COLOR=1 python3 -m arcade`.
+Words and computer moves vary from game to game.
+
+### Hangman: a round in progress
+
+The board shows the letters found, remaining wrong guesses, and letters already tried.
+
+```text
+     +---+
+     |   |
+     O   |
+         |
+         |
+         |
+    =========
+
+  Word:  _ e _ _ _ _ _ _ _
+  Wrong guesses left: 5
+  Already tried: e x
+
+  Guess a letter:
+```
+
+### Tic Tac Toe: a finished round
+
+You play X. Empty squares keep their numbers so you can choose your next move.
+Here, the three X marks across the top row win the game.
+
+```text
+     X | X | X
+    ---+---+---
+     4 | 5 | 6
+    ---+---+---
+     7 | O | O
+
+  X wins!
+```
+
+---
+
 ## Where to look, and what to ignore
 
 A repository looks like a lot of folders the first time you open one. Almost
