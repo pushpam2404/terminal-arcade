@@ -40,6 +40,7 @@ def test_the_menu_offers_high_scores_and_quit(capsys):
 def test_version_flag_outputs_version_and_exits():
     import subprocess
     import sys
+
     from arcade import __version__
 
     for flag in ["--version", "-V"]:

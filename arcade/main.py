@@ -9,11 +9,10 @@ from __future__ import annotations
 from types import ModuleType
 
 from arcade import __version__, art, scoreboard
-from arcade.games import coinflip, diceroll, guess, hangman, rps, tictactoe
+from arcade.games import coinflip, diceroll, eightball, guess, hangman, rps, tictactoe
 from arcade.input_utils import ask, ask_int, confirm, pause
 
 # To add a game: write arcade/games/yourgame.py, import it above, and add it
-# here. That is the whole process. See docs/how-to-add-a-game.md.
 GAMES: list[ModuleType] = [
     guess,
     hangman,
@@ -21,6 +20,7 @@ GAMES: list[ModuleType] = [
     tictactoe,
     coinflip,
     diceroll,
+    eightball,
 ]
 
 
@@ -67,7 +67,11 @@ def main() -> None:
 
     while True:
         show_menu()
-        choice = ask_int("  What would you like to play?", minimum=1, maximum=quit_option)
+        choice = ask_int(
+            "  What would you like to play?",
+            minimum=1,
+            maximum=quit_option,
+        )
 
         if choice == quit_option:
             print(art.cyan("\n  Thanks for playing. See you next time.\n"))
