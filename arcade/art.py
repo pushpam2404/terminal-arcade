@@ -32,6 +32,9 @@ def colours_supported() -> bool:
 
     Respects the NO_COLOR convention (https://no-color.org) and turns colour
     off when output is being piped to a file.
+
+    Returns:
+        True when stdout is a terminal and NO_COLOR is unset or empty.
     """
     if os.environ.get("NO_COLOR"):
         return False
@@ -41,33 +44,89 @@ def colours_supported() -> bool:
 
 
 def colour(text: str, code: str) -> str:
-    """Wrap `text` in an ANSI colour, or return it unchanged if colour is off."""
+    """Wrap text in an ANSI style when terminal colours are enabled.
+
+    Args:
+        text: The text to style.
+        code: An ANSI colour or style escape sequence.
+
+    Returns:
+        Styled text followed by a reset code, or unchanged text when disabled.
+    """
     if not colours_supported():
         return text
     return f"{code}{text}{RESET}"
 
 
 def red(text: str) -> str:
+    """Apply the red terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the red style and a reset, or unchanged text when disabled.
+    """
     return colour(text, RED)
 
 
 def green(text: str) -> str:
+    """Apply the green terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the green style and a reset, or unchanged text when disabled.
+    """
     return colour(text, GREEN)
 
 
 def yellow(text: str) -> str:
+    """Apply the yellow terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the yellow style and a reset, or unchanged text when disabled.
+    """
     return colour(text, YELLOW)
 
 
 def cyan(text: str) -> str:
+    """Apply the cyan terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the cyan style and a reset, or unchanged text when disabled.
+    """
     return colour(text, CYAN)
 
 
 def bold(text: str) -> str:
+    """Apply the bold terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the bold style and a reset, or unchanged text when disabled.
+    """
     return colour(text, BOLD)
 
 
 def dim(text: str) -> str:
+    """Apply the dim terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the dim style and a reset, or unchanged text when disabled.
+    """
     return colour(text, DIM)
 
 
@@ -179,7 +238,14 @@ GALLOWS = [
 
 
 def banner(text: str) -> str:
-    """Return a simple boxed banner for text that has no ASCII art of its own."""
+    """Put a single line of text inside a three-line ASCII box.
+
+    Args:
+        text: The banner title, without newline characters.
+
+    Returns:
+        A box with one space on each side of the title and no trailing newline.
+    """
     width = len(text) + 4
     top = "+" + "-" * (width - 2) + "+"
     middle = f"| {text} |"
@@ -187,5 +253,13 @@ def banner(text: str) -> str:
 
 
 def rule(char: str = "-", width: int = 50) -> str:
-    """A horizontal divider line."""
+    """Build a divider by repeating the supplied text.
+
+    Args:
+        char: The text to repeat. Defaults to "-"; may contain multiple characters.
+        width: Number of repetitions, defaulting to 50.
+
+    Returns:
+        The repeated text, or an empty string if width is zero or negative.
+    """
     return char * width

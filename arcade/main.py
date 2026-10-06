@@ -9,7 +9,7 @@ from __future__ import annotations
 from types import ModuleType
 
 from arcade import __version__, art, scoreboard
-from arcade.games import eightball, guess, hangman, rps, tictactoe
+from arcade.games import coinflip, diceroll, eightball, guess, hangman, rps, tictactoe
 from arcade.input_utils import ask, ask_int, confirm, pause
 
 # To add a game: write arcade/games/yourgame.py, import it above, and add it
@@ -18,6 +18,8 @@ GAMES: list[ModuleType] = [
     hangman,
     rps,
     tictactoe,
+    coinflip,
+    diceroll,
     eightball,
 ]
 

@@ -36,7 +36,11 @@ WINNING_LINES = [
 
 
 def new_board() -> list[str]:
-    """Return an empty nine-square board."""
+    """Create a fresh board with nine unoccupied squares.
+
+    Returns:
+        A new list containing EMPTY in every position, indexed from 0 to 8.
+    """
     return [EMPTY] * 9
 
 
@@ -77,12 +81,26 @@ def winner(board: list[str]) -> str | None:
 
 
 def free_squares(board: list[str]) -> list[int]:
-    """Return the indexes of every square that is still empty."""
+    """Find the unoccupied positions without changing the board.
+
+    Args:
+        board: Nine squares containing PLAYER, COMPUTER, or EMPTY.
+
+    Returns:
+        Zero-based indexes of empty squares, in ascending order.
+    """
     return [i for i, cell in enumerate(board) if cell == EMPTY]
 
 
 def is_full(board: list[str]) -> bool:
-    """Return True if there are no empty squares left."""
+    """Check whether all squares are occupied, regardless of who has won.
+
+    Args:
+        board: Nine squares containing PLAYER, COMPUTER, or EMPTY.
+
+    Returns:
+        True if EMPTY does not appear on the board, otherwise False.
+    """
     return EMPTY not in board
 
 
@@ -133,8 +151,14 @@ def play() -> int:
         result = winner(board)
 
     print(render(board))
-    print(f"  {result} wins!\n")
 
     if result == PLAYER:
+        print(art.green(f"  {PLAYER} wins!\n"))
         return 100
-    return 0
+    elif result == COMPUTER:
+        print(art.red(f"  {COMPUTER} wins!\n"))
+        return 0
+    else:
+        print(art.yellow("  It's a draw!\n"))
+        return 0
+
