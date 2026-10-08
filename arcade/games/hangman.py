@@ -94,7 +94,9 @@ def play() -> int:
 
         letter = ask_letter("  Guess a letter:")
 
-        if letter in word:
+        if letter in guessed:
+            print(art.yellow(f"  You already tried '{letter}'."))
+        elif letter in word:
             guessed.add(letter)
             print(art.green(f"  Yes — '{letter}' is in the word."))
         else:
