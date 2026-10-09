@@ -65,5 +65,27 @@ def test_outcome_messages_are_formatted(capsys):
                 score = ttt.play()
                 assert score == 100
                 out = capsys.readouterr().out
-                assert "X wins!" in out
+                assert "You win!" in out
 
+
+def test_play_announces_a_draw_for_a_full_board(capsys):
+    from unittest.mock import patch
+
+    board = ["X", "O", "X", "X", "O", "O", "O", "X", " "]
+    with patch("arcade.games.tictactoe.new_board", return_value=board):
+        with patch("arcade.games.tictactoe.ask_int", return_value=9):
+            score = ttt.play()
+
+    assert score == 0
+    output = capsys.readouterr().out
+    assert "It's a draw!" in output
+    assert "None" not in output
+
+
+def test_outcome_message_for_a_draw_does_not_expose_none():
+    assert ttt.outcome_message(None) == "  It's a draw!\n"
+
+
+def test_outcome_message_identifies_the_winner():
+    assert ttt.outcome_message(ttt.PLAYER) == "  You win!\n"
+    assert ttt.outcome_message(ttt.COMPUTER) == "  Computer wins!\n"
