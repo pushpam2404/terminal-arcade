@@ -95,3 +95,57 @@ def test_top_scores_handles_invalid_scores(tmp_path, bad_score):
         {"score": 9, "player": "valid"},
     ]), encoding="utf-8")
     assert [entry["player"] for entry in scoreboard.top_scores(path=path)] == ["valid", "invalid"]
+
+
+def test_player_name_longer_than_14_characters_is_truncated():
+    long_player = "verylongplayernameexceedingfourteen"
+    table = scoreboard.format_scoreboard([
+        {"player": long_player, "game": "guess", "score": 100, "date": "2026-10-15 00:00"}
+    ])
+    assert long_player[:14] in table
+    assert long_player not in table
+
+
+def test_game_name_longer_than_14_characters_is_truncated():
+    long_game = "superduperlonggamename"
+    table = scoreboard.format_scoreboard([
+        {"player": "samar", "game": long_game, "score": 50, "date": "2026-10-15 00:00"}
+    ])
+    assert long_game[:14] in table
+    assert long_game not in table
+
+
+def test_missing_player_or_score_key_does_not_raise():
+    table = scoreboard.format_scoreboard([
+        {"game": "hangman"},
+        {"player": "bob"}
+    ])
+    assert "?" in table
+    assert "0" in table
+    assert "hangman" in table
+    assert "bob" in table
+
+
+def test_multiple_entries_are_numbered_sequentially_starting_from_one():
+    entries = [
+        {"player": "alice", "game": "guess", "score": 10},
+        {"player": "bob", "game": "hangman", "score": 20},
+        {"player": "carol", "game": "tictactoe", "score": 30},
+    ]
+    table = scoreboard.format_scoreboard(entries)
+    lines = [line for line in table.splitlines() if line.strip() and not line.strip().startswith("-") and not "Player" in line]
+    assert len(lines) == 3
+    assert lines[0].strip().startswith("1  ")
+    assert lines[1].strip().startswith("2  ")
+    assert lines[2].strip().startswith("3  ")
+
+
+def test_scoreboard_table_includes_the_header_and_divider_rows():
+    table = scoreboard.format_scoreboard([
+        {"player": "alice", "game": "guess", "score": 10, "date": "2026-10-15 00:00"}
+    ])
+    lines = table.splitlines()
+    assert len(lines) >= 3
+    assert "Player" in lines[0] and "Game" in lines[0] and "Score" in lines[0] and "Date" in lines[0]
+    assert "--------------" in lines[1]
+
