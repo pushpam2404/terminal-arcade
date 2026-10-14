@@ -52,3 +52,47 @@ def test_version_flag_outputs_version_and_exits():
         assert result.returncode == 0
         assert result.stdout.strip() == f"terminal-arcade {__version__}"
 
+
+def test_ctrl_d_at_menu_exits_cleanly():
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "-m", "arcade"],
+        input="",
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "Goodbye!" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_keyboard_interrupt_outer_safety_net_exits_130(monkeypatch, capsys):
+    import runpy
+
+    import pytest
+
+    def fake_main():
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr("arcade.main.main", fake_main)
+    with pytest.raises(SystemExit) as exc_info:
+        runpy.run_module("arcade.__main__", run_name="__main__")
+    assert exc_info.value.code == 130
+    assert "Goodbye!" in capsys.readouterr().err
+
+
+def test_eof_error_outer_safety_net_exits_0(monkeypatch, capsys):
+    import runpy
+
+    import pytest
+
+    def fake_main():
+        raise EOFError()
+
+    monkeypatch.setattr("arcade.main.main", fake_main)
+    with pytest.raises(SystemExit) as exc_info:
+        runpy.run_module("arcade.__main__", run_name="__main__")
+    assert exc_info.value.code == 0
+    assert "Goodbye!" in capsys.readouterr().err

@@ -62,3 +62,93 @@ def test_confirm_returns_true_for_yes(fake_input):
 def test_confirm_returns_false_for_no(fake_input):
     fake_input(["n"])
     assert input_utils.confirm("Sure?") is False
+
+
+def test_ask_exits_cleanly_on_keyboard_interrupt(monkeypatch, capsys):
+    import builtins
+
+    import pytest
+
+    def fake_input(prompt=""):
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(builtins, "input", fake_input)
+    with pytest.raises(SystemExit) as exc_info:
+        input_utils.ask("Say something:")
+    assert exc_info.value.code == 130
+    assert "Goodbye!" in capsys.readouterr().err
+
+
+def test_ask_exits_cleanly_on_eof_error(monkeypatch, capsys):
+    import builtins
+
+    import pytest
+
+    def fake_input(prompt=""):
+        raise EOFError()
+
+    monkeypatch.setattr(builtins, "input", fake_input)
+    with pytest.raises(SystemExit) as exc_info:
+        input_utils.ask("Say something:")
+    assert exc_info.value.code == 0
+    assert "Goodbye!" in capsys.readouterr().err
+
+
+def test_pause_exits_cleanly_on_keyboard_interrupt(monkeypatch, capsys):
+    import builtins
+
+    import pytest
+
+    def fake_input(prompt=""):
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(builtins, "input", fake_input)
+    with pytest.raises(SystemExit) as exc_info:
+        input_utils.pause()
+    assert exc_info.value.code == 130
+    assert "Goodbye!" in capsys.readouterr().err
+
+
+def test_pause_exits_cleanly_on_eof_error(monkeypatch, capsys):
+    import builtins
+
+    import pytest
+
+    def fake_input(prompt=""):
+        raise EOFError()
+
+    monkeypatch.setattr(builtins, "input", fake_input)
+    with pytest.raises(SystemExit) as exc_info:
+        input_utils.pause()
+    assert exc_info.value.code == 0
+    assert "Goodbye!" in capsys.readouterr().err
+
+
+def test_confirm_exits_cleanly_on_keyboard_interrupt(monkeypatch, capsys):
+    import builtins
+
+    import pytest
+
+    def fake_input(prompt=""):
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(builtins, "input", fake_input)
+    with pytest.raises(SystemExit) as exc_info:
+        input_utils.confirm("Sure?")
+    assert exc_info.value.code == 130
+    assert "Goodbye!" in capsys.readouterr().err
+
+
+def test_confirm_exits_cleanly_on_eof_error(monkeypatch, capsys):
+    import builtins
+
+    import pytest
+
+    def fake_input(prompt=""):
+        raise EOFError()
+
+    monkeypatch.setattr(builtins, "input", fake_input)
+    with pytest.raises(SystemExit) as exc_info:
+        input_utils.confirm("Sure?")
+    assert exc_info.value.code == 0
+    assert "Goodbye!" in capsys.readouterr().err

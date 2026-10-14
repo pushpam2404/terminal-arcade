@@ -6,6 +6,7 @@ provides NAME, DESCRIPTION, and a play() function returning a score.
 
 from __future__ import annotations
 
+import sys
 from types import ModuleType
 
 from arcade import __version__, art, scoreboard
@@ -94,4 +95,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nGoodbye!", file=sys.stderr)
+        sys.exit(130)
+    except EOFError:
+        print("\nGoodbye!", file=sys.stderr)
+        sys.exit(0)

@@ -6,7 +6,20 @@ question behaves the same way everywhere.
 
 from __future__ import annotations
 
+import sys
+
 from arcade import art
+
+
+def _handle_interrupt(exc: BaseException) -> None:
+    """Print a goodbye message to stderr and exit cleanly.
+
+    Ctrl+C exits with status 130; Ctrl+D exits with status 0.
+    """
+    print("\nGoodbye!", file=sys.stderr)
+    if isinstance(exc, KeyboardInterrupt):
+        sys.exit(130)
+    sys.exit(0)
 
 
 def ask(prompt: str) -> str:
@@ -18,7 +31,10 @@ def ask(prompt: str) -> str:
     Returns:
         The raw text the player typed.
     """
-    return input(f"{prompt} ")
+    try:
+        return input(f"{prompt} ")
+    except (KeyboardInterrupt, EOFError) as exc:
+        _handle_interrupt(exc)
 
 
 def ask_int(prompt: str, minimum: int | None = None, maximum: int | None = None) -> int:
@@ -88,4 +104,7 @@ def confirm(prompt: str) -> bool:
 
 def pause(message: str = "Press Enter to continue...") -> None:
     """Wait for the player to press Enter."""
-    input(art.dim(message))
+    try:
+        input(art.dim(message))
+    except (KeyboardInterrupt, EOFError) as exc:
+        _handle_interrupt(exc)
