@@ -83,7 +83,10 @@ def play() -> int:
             print(f"  You scored {points} points.\n")
             return points
         else:
-            print(" Wrong Guess ")
+            # A wrong guess is a loss, so it reads red like every other game's
+            # failure message. Going through art.red also means NO_COLOR and
+            # piped output stay plain, which a bare print() cannot do.
+            print(art.red(" Wrong Guess "))
 
     print(art.red(f"\n Out of attempts. The word was {word}.\n"))
     return 0
