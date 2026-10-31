@@ -97,7 +97,7 @@ def test_eof_error_outer_safety_net_exits_0(monkeypatch, capsys):
     assert exc_info.value.code == 0
     assert "Goodbye!" in capsys.readouterr().err
 
-    
+
 def test_the_menu_offers_surprise_me(capsys):
     main.show_menu()
     output = capsys.readouterr().out
@@ -106,13 +106,17 @@ def test_the_menu_offers_surprise_me(capsys):
 
 def test_surprise_me_plays_a_random_game(monkeypatch, capsys):
     game = main.GAMES[0]
+
     monkeypatch.setattr(main.random, "choice", lambda games: game)
-    monkeypatch.setattr(main, "ask_int", lambda *args, **kwargs: main.SURPRISE_OPTION)
-    monkeypatch.setattr(main, "run_game", lambda selected_game: print(f"Playing {selected_game.NAME}"))
+    monkeypatch.setattr(
+        main,
+        "run_game",
+        lambda selected_game: print(f"Playing {selected_game.NAME}"),
+    )
     monkeypatch.setattr(main, "pause", lambda: None)
 
-    choices = iter([main.SURPRISE_OPTION, main.QUIT_OPTION])
-    monkeypatch.setattr(main, "ask_int", lambda *args, **kwargs: next(choices))
+    keys = iter(["s", "q"])
+    monkeypatch.setattr(main, "read_key", lambda prompt="": next(keys))
 
     main.main()
 

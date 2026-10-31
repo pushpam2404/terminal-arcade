@@ -6,7 +6,14 @@ question behaves the same way everywhere.
 
 from __future__ import annotations
 
+import os
 import sys
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import termios
+    import tty
 
 from arcade import art
 
@@ -20,6 +27,26 @@ def _handle_interrupt(exc: BaseException) -> None:
     if isinstance(exc, KeyboardInterrupt):
         sys.exit(130)
     sys.exit(0)
+
+def read_key(prompt: str = "") -> str:
+    """Read a single keypress without requiring Enter."""
+    if not sys.stdin.isatty():
+        return input(prompt)
+
+    if os.name == "nt":
+        print(prompt, end="", flush=True)
+        return msvcrt.getwch()
+
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+
+    try:
+        print(prompt, end="", flush=True)
+        tty.setcbreak(fd)
+        return sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
 
 
 def ask(prompt: str) -> str:

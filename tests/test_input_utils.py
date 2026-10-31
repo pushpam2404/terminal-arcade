@@ -152,3 +152,60 @@ def test_confirm_exits_cleanly_on_eof_error(monkeypatch, capsys):
         input_utils.confirm("Sure?")
     assert exc_info.value.code == 0
     assert "Goodbye!" in capsys.readouterr().err
+
+
+def test_read_key_falls_back_to_input_when_stdin_is_not_tty(monkeypatch):
+    import builtins
+    import io
+
+    monkeypatch.setattr(input_utils.sys, "stdin", io.StringIO())
+    monkeypatch.setattr(builtins, "input", lambda prompt="": "7")
+
+    assert input_utils.read_key("Pick:") == "7"
+
+def test_read_key_reads_a_key_on_windows(monkeypatch):
+    import pytest
+    if input_utils.os.name != "nt":
+        pytest.skip("Windows-specific test")
+    monkeypatch.setattr(input_utils.sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(input_utils.os, "name", "nt")
+    monkeypatch.setattr(input_utils.msvcrt, "getwch", lambda: "5")
+
+    assert input_utils.read_key("Pick:") == "5"
+
+def test_read_key_reads_a_key_on_unix(monkeypatch):
+    import pytest
+
+    if input_utils.os.name == "nt":
+        pytest.skip("Unix-specific test")
+
+    class FakeStdin:
+        def isatty(self):
+            return True
+
+        def fileno(self):
+            return 10
+
+        def read(self, size):
+            return "4"
+
+    old_settings = ["old settings"]
+    restored = []
+
+    monkeypatch.setattr(input_utils.sys, "stdin", FakeStdin())
+    monkeypatch.setattr(
+        input_utils.termios, "tcgetattr", lambda fd: old_settings
+    )
+    monkeypatch.setattr(
+        input_utils.tty, "setcbreak", lambda fd: None
+    )
+    monkeypatch.setattr(
+        input_utils.termios,
+        "tcsetattr",
+        lambda fd, when, settings: restored.append((fd, when, settings)),
+    )
+
+    assert input_utils.read_key("Pick:") == "4"
+    assert restored == [
+        (10, input_utils.termios.TCSADRAIN, old_settings)
+    ]
