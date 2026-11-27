@@ -8,12 +8,83 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import sqlite3
 import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 SCORES_PATH = Path.home() / ".terminal-arcade" / "scores.json"
+SQLITE_SCORES_PATH = Path.home() / ".terminal-arcade" / "scores.db"
+
+
+def is_sqlite_enabled() -> bool:
+    """Return True if the SQLite scores backend is activated."""
+    return os.environ.get("ARCADE_STORAGE", "").strip().lower() == "sqlite"
+
+
+def _sqlite_target(path: Path | None = None) -> Path:
+    """Determine the SQLite database path given an optional override path."""
+    if path is not None:
+        if path.suffix == ".db":
+            return path
+        return path.with_suffix(".db")
+    return SQLITE_SCORES_PATH
+
+
+def _init_sqlite_db(db_path: Path, json_source: Path | None = None) -> sqlite3.Connection:
+    """Initialize the SQLite database schema and auto-migrate existing JSON data.
+
+    Args:
+        db_path: Path to the SQLite database file.
+        json_source: Optional path to an existing JSON scores file to import.
+
+    Returns:
+        An open sqlite3.Connection.
+    """
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path), timeout=30.0)
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game TEXT NOT NULL,
+            player TEXT NOT NULL,
+            score REAL NOT NULL,
+            date TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM scores")
+    count = cursor.fetchone()[0]
+    if count == 0:
+        json_path = json_source or (
+            db_path.with_suffix(".json") if db_path.suffix == ".db" else SCORES_PATH
+        )
+        if json_path.exists():
+            try:
+                raw = json_path.read_text(encoding="utf-8")
+                entries = json.loads(raw)
+                if isinstance(entries, list):
+                    for e in entries:
+                        if isinstance(e, dict):
+                            g = str(e.get("game", ""))
+                            p = str(e.get("player", ""))
+                            s = float(e.get("score", 0))
+                            d = str(e.get("date", ""))
+                            cursor.execute(
+                                "INSERT INTO scores (game, player, score, date) VALUES (?, ?, ?, ?)",
+                                (g, p, s, d),
+                            )
+                    conn.commit()
+            except Exception:
+                pass
+    return conn
 
 
 def _ensure_file() -> None:
@@ -26,8 +97,8 @@ def _ensure_file() -> None:
 def load_scores(path: Path | None = None) -> list[dict[str, Any]]:
     """Read every saved score.
 
-    A corrupt or unreadable file is treated as empty rather than crashing the
-    arcade — losing a scoreboard is annoying, losing the whole game is worse.
+    A corrupt or unreadable file or database is treated as empty rather than
+    crashing the arcade — losing a scoreboard is annoying, losing the whole game is worse.
 
     Args:
         path: Where to read from. Defaults to the player's scores file.
@@ -35,6 +106,27 @@ def load_scores(path: Path | None = None) -> list[dict[str, Any]]:
     Returns:
         A list of score entries. Empty if nothing has been saved yet.
     """
+    if is_sqlite_enabled():
+        db_path = _sqlite_target(path)
+        json_src = (
+            path
+            if (path and path.suffix == ".json")
+            else (db_path.with_suffix(".json") if db_path.suffix == ".db" else SCORES_PATH)
+        )
+        try:
+            conn = _init_sqlite_db(db_path, json_source=json_src)
+            cursor = conn.cursor()
+            cursor.execute("SELECT game, player, score, date FROM scores ORDER BY id ASC")
+            rows = cursor.fetchall()
+            conn.close()
+            result: list[dict[str, Any]] = []
+            for g, p, s, d in rows:
+                score_val = int(s) if float(s).is_integer() else s
+                result.append({"game": g, "player": p, "score": score_val, "date": d})
+            return result
+        except (sqlite3.DatabaseError, sqlite3.OperationalError, OSError):
+            return []
+
     target = path or SCORES_PATH
     if not target.exists():
         return []
@@ -64,18 +156,37 @@ def save_score(
     Returns:
         The entry that was saved.
     """
-    target = path or SCORES_PATH
-    if path is None:
-        _ensure_file()
-    else:
-        target.parent.mkdir(parents=True, exist_ok=True)
-
     entry = {
         "game": game,
         "player": player,
         "score": score,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
     }
+
+    if is_sqlite_enabled():
+        db_path = _sqlite_target(path)
+        json_src = (
+            path
+            if (path and path.suffix == ".json")
+            else (db_path.with_suffix(".json") if db_path.suffix == ".db" else SCORES_PATH)
+        )
+        try:
+            conn = _init_sqlite_db(db_path, json_source=json_src)
+            with conn:
+                conn.execute(
+                    "INSERT INTO scores (game, player, score, date) VALUES (?, ?, ?, ?)",
+                    (entry["game"], entry["player"], float(entry["score"]), entry["date"]),
+                )
+            conn.close()
+            return entry
+        except (sqlite3.DatabaseError, sqlite3.OperationalError, OSError):
+            return entry
+
+    target = path or SCORES_PATH
+    if path is None:
+        _ensure_file()
+    else:
+        target.parent.mkdir(parents=True, exist_ok=True)
 
     scores = load_scores(target)
     scores.append(entry)

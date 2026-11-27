@@ -277,3 +277,77 @@ def test_scoreboard_drops_date_when_narrow():
     assert "alex" in narrow
 
 
+def test_sqlite_backend_switch_and_crud(tmp_path, monkeypatch):
+    monkeypatch.setenv("ARCADE_STORAGE", "sqlite")
+    db_file = tmp_path / "test_scores.db"
+
+    # Initially empty
+    assert scoreboard.load_scores(path=db_file) == []
+
+    # Save scores
+    scoreboard.save_score("diceroll", "player1", 100, path=db_file)
+    scoreboard.save_score("diceroll", "player2", 40, path=db_file)
+
+    loaded = scoreboard.load_scores(path=db_file)
+    assert len(loaded) == 2
+    assert loaded[0]["player"] == "player1"
+    assert loaded[0]["score"] == 100
+
+    # Top scores
+    top = scoreboard.top_scores(game="diceroll", limit=1, path=db_file)
+    assert len(top) == 1
+    assert top[0]["player"] == "player1"
+
+    # Stats for
+    stats = scoreboard.stats_for("diceroll", path=db_file)
+    assert stats["games_played"] == 2
+    assert stats["best_score"] == 100
+    assert stats["average_score"] == 70
+
+
+def test_sqlite_auto_migration_from_json(tmp_path, monkeypatch):
+    json_file = tmp_path / "scores.json"
+    # Create existing JSON data
+    monkeypatch.delenv("ARCADE_STORAGE", raising=False)
+    scoreboard.save_score("coinflip", "alice", 3, path=json_file)
+    scoreboard.save_score("hangman", "bob", 85, path=json_file)
+
+    # Enable SQLite backend
+    monkeypatch.setenv("ARCADE_STORAGE", "sqlite")
+    migrated = scoreboard.load_scores(path=json_file)
+    assert len(migrated) == 2
+    assert {e["player"] for e in migrated} == {"alice", "bob"}
+
+
+def test_sqlite_corrupt_database_handled_gracefully(tmp_path, monkeypatch):
+    monkeypatch.setenv("ARCADE_STORAGE", "sqlite")
+    corrupt_db = tmp_path / "corrupt.db"
+    corrupt_db.write_bytes(b"not a valid sqlite database header at all")
+
+    # Does not raise, returns empty
+    scores = scoreboard.load_scores(path=corrupt_db)
+    assert scores == []
+
+    # Saving to a corrupt DB returns entry safely without raising
+    entry = scoreboard.save_score("coinflip", "c", 10, path=corrupt_db)
+    assert entry["player"] == "c"
+
+
+def test_sqlite_concurrent_writes(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    monkeypatch.setenv("ARCADE_STORAGE", "sqlite")
+    db_file = tmp_path / "concurrent.db"
+
+    def writer(i):
+        scoreboard.save_score("game", f"player_{i}", i * 10, path=db_file)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        list(executor.map(writer, range(20)))
+
+    scores = scoreboard.load_scores(path=db_file)
+    assert len(scores) == 20
+    assert {s["score"] for s in scores} == {i * 10 for i in range(20)}
+
+
+
