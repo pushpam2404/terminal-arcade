@@ -26,3 +26,41 @@ def test_colour_is_skipped_when_no_color_is_set(no_colour):
 
 def test_there_are_seven_gallows_stages():
     assert len(art.GALLOWS) == 7
+
+
+def test_terminal_width_defaults_and_env(monkeypatch):
+    monkeypatch.setenv("COLUMNS", "120")
+    assert art.terminal_width() == 120
+
+    monkeypatch.delenv("COLUMNS", raising=False)
+    w = art.terminal_width()
+    assert isinstance(w, int)
+    assert w >= 1
+
+
+def test_rule_defaults_to_terminal_width(monkeypatch):
+    monkeypatch.setenv("COLUMNS", "64")
+    assert len(art.rule()) == 64
+    assert len(art.rule("=", width=15)) == 15
+
+
+def test_fit_centers_art_when_room():
+    text = "###\n###"
+    fitted = art.fit(text, width=20)
+    for line in fitted.strip("\r\n").splitlines():
+        assert line.startswith("        ###")  # (20 - 3) // 2 = 8 spaces padding
+
+
+def test_fit_falls_back_to_title_when_narrow():
+    wide_art = "A" * 50
+    fitted = art.fit(wide_art, width=25, fallback_title="Short Title")
+    assert "Short Title" in fitted
+    assert wide_art not in fitted
+
+
+def test_fit_never_crashes_on_extreme_widths():
+    for w in [1, 2, 5, 10, 80, 200]:
+        res = art.fit(art.ARCADE_BANNER, width=w, fallback_title="Arcade")
+        assert isinstance(res, str)
+        assert len(res) > 0
+

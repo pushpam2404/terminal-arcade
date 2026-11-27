@@ -204,11 +204,17 @@ def _format_name(name: str, width: int = 14) -> str:
     return truncated + (" " * pad)
 
 
-def format_scoreboard(entries: list[dict[str, Any]]) -> str:
+def format_scoreboard(
+    entries: list[dict[str, Any]],
+    width: int | None = None,
+) -> str:
     """Render score entries as a plain text table.
+
+    Drops the Date column if the available width is narrower than 60 columns.
 
     Args:
         entries: Score entries, already in the order you want them shown.
+        width: Terminal column width. Defaults to art.terminal_width().
 
     Returns:
         A multi-line string ready to print.
@@ -216,14 +222,35 @@ def format_scoreboard(entries: list[dict[str, Any]]) -> str:
     if not entries:
         return "  No scores yet. Be the first."
 
-    lines = [
-        "  #  Player          Game            Score  Date",
-        "  -  --------------  --------------  -----  ----------------",
-    ]
-    for i, entry in enumerate(entries, start=1):
-        player = _format_name(str(entry.get("player", "?")), 14)
-        game = str(entry.get("game", "?"))[:14]
-        score = entry.get("score", 0)
-        date = entry.get("date", "")
-        lines.append(f"  {i}  {player}  {game:<14}  {score:>5}  {date}")
+    if width is None:
+        try:
+            from arcade import art
+            width = art.terminal_width()
+        except Exception:
+            width = 80
+
+    include_date = width >= 60
+
+    if include_date:
+        lines = [
+            "  #  Player          Game            Score  Date",
+            "  -  --------------  --------------  -----  ----------------",
+        ]
+        for i, entry in enumerate(entries, start=1):
+            player = _format_name(str(entry.get("player", "?")), 14)
+            game = str(entry.get("game", "?"))[:14]
+            score = entry.get("score", 0)
+            date = entry.get("date", "")
+            lines.append(f"  {i}  {player}  {game:<14}  {score:>5}  {date}")
+    else:
+        lines = [
+            "  #  Player          Game            Score",
+            "  -  --------------  --------------  -----",
+        ]
+        for i, entry in enumerate(entries, start=1):
+            player = _format_name(str(entry.get("player", "?")), 14)
+            game = str(entry.get("game", "?"))[:14]
+            score = entry.get("score", 0)
+            lines.append(f"  {i}  {player}  {game:<14}  {score:>5}")
+
     return "\n".join(lines)

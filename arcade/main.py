@@ -41,7 +41,7 @@ GAMES: list[ModuleType] = [
 
 def show_menu(scores_path: Path | None = None) -> None:
     """Print the list of games and the extra options."""
-    print(art.ARCADE_BANNER.strip("\r\n"))
+    print(art.fit(art.ARCADE_BANNER, fallback_title="Terminal Arcade").strip("\r\n"))
     print(art.dim(f"  v{__version__}  ·  github-community-gitam"))
 
     for number, game in enumerate(GAMES, start=1):
