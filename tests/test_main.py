@@ -123,3 +123,36 @@ def test_surprise_me_plays_a_random_game(monkeypatch, capsys):
     output = capsys.readouterr().out
     assert f"Surprise! You're playing {game.NAME}!" in output
     assert f"Playing {game.NAME}" in output
+
+
+def test_menu_shows_ctrl_c_hint_dimmed(capsys):
+    main.show_menu()
+    output = capsys.readouterr().out
+    assert "Press Ctrl+C at any time to quit" in output
+
+
+def test_menu_shows_game_count_when_scores_exist(tmp_path, capsys):
+    from arcade import scoreboard
+
+    path = tmp_path / "scores.json"
+    scoreboard.save_score("guess", "player1", 10, path=path)
+    scoreboard.save_score("hangman", "player2", 20, path=path)
+
+    main.show_menu(scores_path=path)
+    output = capsys.readouterr().out
+    assert "High scores (2 played)" in output
+
+
+def test_menu_shows_no_count_when_no_scores_exist(tmp_path, capsys):
+    empty_path = tmp_path / "empty_scores.json"
+    main.show_menu(scores_path=empty_path)
+    output = capsys.readouterr().out
+    assert "High scores\n" in output
+    assert "played" not in output
+
+
+def test_menu_fits_in_24_rows(capsys):
+    main.show_menu()
+    output = capsys.readouterr().out
+    lines = output.strip().splitlines()
+    assert len(lines) <= 24
