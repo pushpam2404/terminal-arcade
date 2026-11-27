@@ -102,8 +102,41 @@ def test_player_name_longer_than_14_characters_is_truncated():
     table = scoreboard.format_scoreboard([
         {"player": long_player, "game": "guess", "score": 100, "date": "2026-10-15 00:00"}
     ])
-    assert long_player[:14] in table
+    assert "verylongplaye…" in table
     assert long_player not in table
+
+
+def test_long_player_name_truncates_with_ellipsis():
+    table = scoreboard.format_scoreboard([
+        {"player": "Venkateswara Rao", "game": "guess", "score": 100, "date": "2026-10-15 00:00"}
+    ])
+    assert "Venkateswara…" in table
+    assert "Venkateswara Rao" not in table
+
+
+def test_short_player_name_is_unaffected():
+    table = scoreboard.format_scoreboard([
+        {"player": "asha", "game": "guess", "score": 100, "date": "2026-10-15 00:00"}
+    ])
+    assert "asha" in table
+    assert "…" not in table
+
+
+def test_player_name_with_wide_characters_preserves_row_alignment():
+    entries = [
+        {"player": "Venkateswara Rao", "game": "hangman", "score": 100, "date": "2026-11-28 01:00"},
+        {"player": "asha", "game": "guess", "score": 80, "date": "2026-11-28 01:05"},
+        {"player": "龍王伝説の勇者", "game": "rpsls", "score": 60, "date": "2026-11-28 01:10"},
+        {"player": "🎮Gamer🎮", "game": "diceroll", "score": 40, "date": "2026-11-28 01:15"},
+    ]
+    table = scoreboard.format_scoreboard(entries)
+    rows = [
+        line
+        for line in table.splitlines()
+        if line.strip() and not line.strip().startswith("-") and "Player" not in line
+    ]
+    widths = [scoreboard._str_width(row) for row in rows]
+    assert len(set(widths)) == 1
 
 
 def test_game_name_longer_than_14_characters_is_truncated():

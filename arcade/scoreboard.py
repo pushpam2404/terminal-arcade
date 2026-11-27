@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import math
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -113,6 +114,41 @@ def top_scores(
     return ranked[:limit]
 
 
+def _char_width(char: str) -> int:
+    """Return the terminal display width of a single character."""
+    return 2 if unicodedata.east_asian_width(char) in ("W", "F") else 1
+
+
+def _str_width(text: str) -> int:
+    """Return the terminal display width of a string."""
+    return sum(_char_width(c) for c in text)
+
+
+def _format_name(name: str, width: int = 14) -> str:
+    """Format and pad a player name to fit exactly `width` display columns.
+
+    If the name exceeds `width` display columns, it is truncated with an
+    ellipsis ('…') so the total display width is exactly `width`.
+    """
+    total_width = _str_width(name)
+    if total_width <= width:
+        return name + (" " * (width - total_width))
+
+    target_width = width - _str_width("…")
+    current_width = 0
+    chars: list[str] = []
+    for c in name:
+        cw = _char_width(c)
+        if current_width + cw > target_width:
+            break
+        chars.append(c)
+        current_width += cw
+
+    truncated = "".join(chars).rstrip() + "…"
+    pad = width - _str_width(truncated)
+    return truncated + (" " * pad)
+
+
 def format_scoreboard(entries: list[dict[str, Any]]) -> str:
     """Render score entries as a plain text table.
 
@@ -130,9 +166,9 @@ def format_scoreboard(entries: list[dict[str, Any]]) -> str:
         "  -  --------------  --------------  -----  ----------------",
     ]
     for i, entry in enumerate(entries, start=1):
-        player = str(entry.get("player", "?"))[:14]
+        player = _format_name(str(entry.get("player", "?")), 14)
         game = str(entry.get("game", "?"))[:14]
         score = entry.get("score", 0)
         date = entry.get("date", "")
-        lines.append(f"  {i}  {player:<14}  {game:<14}  {score:>5}  {date}")
+        lines.append(f"  {i}  {player}  {game:<14}  {score:>5}  {date}")
     return "\n".join(lines)
