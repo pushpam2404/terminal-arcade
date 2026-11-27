@@ -113,11 +113,31 @@ def outcome_message(result: str | None) -> str:
     return "  It's a draw!\n"
 
 
-def computer_move(board: list[str]) -> int:
-    """Choose a square for the computer.
+def find_completing_square(board: list[str], mark: str) -> int | None:
+    """Find a free square that would complete a three-in-a-row for `mark`.
 
-    Currently picks at random from the free squares. There is an open issue to
-    make this cleverer if you fancy it.
+    Args:
+        board: The current board.
+        mark: PLAYER ("X") or COMPUTER ("O").
+
+    Returns:
+        The zero-based index of the completing square, or None if none exists.
+    """
+    for a, b, c in WINNING_LINES:
+        line = [board[a], board[b], board[c]]
+        if line.count(mark) == 2 and line.count(EMPTY) == 1:
+            for idx in (a, b, c):
+                if board[idx] == EMPTY:
+                    return idx
+    return None
+
+
+def computer_move(board: list[str]) -> int:
+    """Choose a square for the computer using a three-rule strategy.
+
+    1. Win — if the computer has two in a line and the third is free, take it.
+    2. Block — if the player has two in a line and the third is free, take it.
+    3. Otherwise — prefer the centre, then a corner, then any free square.
 
     Args:
         board: The current board.
@@ -125,6 +145,21 @@ def computer_move(board: list[str]) -> int:
     Returns:
         The index of the square to play.
     """
+    win = find_completing_square(board, COMPUTER)
+    if win is not None:
+        return win
+
+    block = find_completing_square(board, PLAYER)
+    if block is not None:
+        return block
+
+    if board[4] == EMPTY:
+        return 4
+
+    corners = [i for i in (0, 2, 6, 8) if board[i] == EMPTY]
+    if corners:
+        return random.choice(corners)
+
     return random.choice(free_squares(board))
 
 
