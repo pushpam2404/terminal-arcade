@@ -182,3 +182,41 @@ def test_scoreboard_table_includes_the_header_and_divider_rows():
     assert "Player" in lines[0] and "Game" in lines[0] and "Score" in lines[0] and "Date" in lines[0]
     assert "--------------" in lines[1]
 
+
+
+def test_a_long_player_name_is_truncated_without_shifting_the_game_column():
+    row = scoreboard.format_scoreboard([{"player": "abcdefghijklmnop", "game": "snake", "score": 9}]).splitlines()[2]
+    assert row[5:19] == "abcdefghijklm…"
+    assert row[21:35] == "snake         "
+    assert row[37:42] == "    9"
+
+
+def test_a_long_game_name_is_truncated_without_shifting_the_score_column():
+    row = scoreboard.format_scoreboard([{"player": "asha", "game": "abcdefghijklmnop", "score": 12}]).splitlines()[2]
+    assert row[21:35] == "abcdefghijklmn"
+    assert row[37:42] == "   12"
+
+
+def test_a_missing_player_name_displays_a_question_mark_in_its_column():
+    row = scoreboard.format_scoreboard([{"game": "snake", "score": 4}]).splitlines()[2]
+    assert row[5:19] == "?             "
+    assert row[37:42] == "    4"
+
+
+def test_a_missing_score_displays_zero_without_raising_an_error():
+    row = scoreboard.format_scoreboard([{"player": "asha", "game": "snake"}]).splitlines()[2]
+    assert row[37:42] == "    0"
+
+
+def test_multiple_entries_keep_their_input_order_and_receive_sequential_ranks():
+    rows = scoreboard.format_scoreboard([
+        {"player": "first", "score": 2}, {"player": "second", "score": 99}, {"player": "third", "score": 7},
+    ]).splitlines()[2:]
+    assert [row[2:3] for row in rows] == ["1", "2", "3"]
+    assert [row[5:19].strip() for row in rows] == ["first", "second", "third"]
+
+
+def test_a_nonempty_scoreboard_starts_with_the_header_and_separator_rows():
+    lines = scoreboard.format_scoreboard([{}]).splitlines()
+    assert lines[0] == "  #  Player          Game            Score  Date"
+    assert lines[1] == "  -  --------------  --------------  -----  ----------------"
