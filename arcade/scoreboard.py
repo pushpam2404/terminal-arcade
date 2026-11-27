@@ -114,6 +114,61 @@ def top_scores(
     return ranked[:limit]
 
 
+def stats_for(game: str, path: Path | None = None) -> dict[str, Any]:
+    """Calculate summary statistics for a particular game.
+
+    Args:
+        game: Only show statistics for this game.
+        path: Where to read from. Defaults to the player's scores file.
+
+    Returns:
+        A dict with games_played, best_score, average_score, and last_played.
+    """
+    entries = top_scores(game=game, limit=100_000, path=path)
+    if not entries:
+        return {
+            "games_played": 0,
+            "best_score": None,
+            "average_score": None,
+            "last_played": None,
+        }
+
+    scores: list[float] = []
+    for entry in entries:
+        try:
+            val = float(entry.get("score", 0))
+            if math.isfinite(val):
+                scores.append(val)
+        except (TypeError, ValueError, OverflowError):
+            continue
+
+    games_played = len(entries)
+    if not scores:
+        return {
+            "games_played": games_played,
+            "best_score": 0,
+            "average_score": 0.0,
+            "last_played": entries[-1].get("date", ""),
+        }
+
+    best = max(scores)
+    best_score: int | float = int(best) if best.is_integer() else best
+
+    avg = sum(scores) / len(scores)
+    rounded_avg = round(avg, 1)
+    average_score: int | float = int(rounded_avg) if rounded_avg.is_integer() else rounded_avg
+
+    dates = [e.get("date", "") for e in entries if e.get("date")]
+    last_played = max(dates) if dates else entries[-1].get("date", "")
+
+    return {
+        "games_played": games_played,
+        "best_score": best_score,
+        "average_score": average_score,
+        "last_played": last_played,
+    }
+
+
 def _char_width(char: str) -> int:
     """Return the terminal display width of a single character."""
     return 2 if unicodedata.east_asian_width(char) in ("W", "F") else 1

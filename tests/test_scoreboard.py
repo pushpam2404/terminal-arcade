@@ -220,3 +220,44 @@ def test_a_nonempty_scoreboard_starts_with_the_header_and_separator_rows():
     lines = scoreboard.format_scoreboard([{}]).splitlines()
     assert lines[0] == "  #  Player          Game            Score  Date"
     assert lines[1] == "  -  --------------  --------------  -----  ----------------"
+
+
+def test_stats_for_with_no_scores_returns_empty_summary(tmp_path):
+    stats = scoreboard.stats_for("guess", path=tmp_path / "empty.json")
+    assert stats["games_played"] == 0
+    assert stats["best_score"] is None
+    assert stats["average_score"] is None
+    assert stats["last_played"] is None
+
+
+def test_stats_for_with_exactly_one_score(tmp_path):
+    path = tmp_path / "scores.json"
+    scoreboard.save_score("guess", "asha", 80, path=path)
+    stats = scoreboard.stats_for("guess", path=path)
+    assert stats["games_played"] == 1
+    assert stats["best_score"] == 80
+    assert stats["average_score"] == 80
+    assert stats["last_played"] is not None
+
+
+def test_stats_for_with_several_scores_calculates_sensible_average(tmp_path):
+    path = tmp_path / "scores.json"
+    scoreboard.save_score("guess", "a", 10, path=path)
+    scoreboard.save_score("guess", "b", 20, path=path)
+    scoreboard.save_score("guess", "c", 25, path=path)
+    stats = scoreboard.stats_for("guess", path=path)
+    assert stats["games_played"] == 3
+    assert stats["best_score"] == 25
+    assert stats["average_score"] == 18.3
+    assert stats["last_played"] is not None
+
+
+def test_stats_for_filters_by_specific_game(tmp_path):
+    path = tmp_path / "scores.json"
+    scoreboard.save_score("guess", "a", 10, path=path)
+    scoreboard.save_score("hangman", "b", 90, path=path)
+    stats = scoreboard.stats_for("hangman", path=path)
+    assert stats["games_played"] == 1
+    assert stats["best_score"] == 90
+    assert stats["average_score"] == 90
+
