@@ -261,3 +261,19 @@ def test_stats_for_filters_by_specific_game(tmp_path):
     assert stats["best_score"] == 90
     assert stats["average_score"] == 90
 
+
+def test_scoreboard_drops_date_when_narrow():
+    entry = [{"player": "alex", "game": "coinflip", "score": 100, "date": "2026-11-28 03:00"}]
+    # Wide terminal: includes date
+    wide = scoreboard.format_scoreboard(entry, width=80)
+    assert "Date" in wide
+    assert "2026-11-28 03:00" in wide
+
+    # Narrow terminal: drops date
+    narrow = scoreboard.format_scoreboard(entry, width=45)
+    assert "Date" not in narrow
+    assert "2026-11-28 03:00" not in narrow
+    assert "Score" in narrow
+    assert "alex" in narrow
+
+

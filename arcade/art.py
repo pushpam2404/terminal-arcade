@@ -10,6 +10,7 @@ it does not wrap on a small terminal.
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 
 # --- Colours -----------------------------------------------------------------
@@ -261,14 +262,85 @@ def banner(text: str) -> str:
     return f"{top}\n{middle}\n{top}"
 
 
-def rule(char: str = "-", width: int = 50) -> str:
-    """Build a divider by repeating the supplied text.
+def terminal_width(default: int = 80) -> int:
+    """Return the terminal width in columns, with a safe fallback.
 
     Args:
-        char: The text to repeat. Defaults to "-"; may contain multiple characters.
-        width: Number of repetitions, defaulting to 50.
+        default: Fallback width if terminal size cannot be detected. Defaults to 80.
 
     Returns:
-        The repeated text, or an empty string if width is zero or negative.
+        The number of terminal columns (at least 1).
     """
-    return char * width
+    try:
+        env_cols = os.environ.get("COLUMNS")
+        if env_cols:
+            try:
+                c = int(env_cols)
+                if c > 0:
+                    return c
+            except ValueError:
+                pass
+        cols = shutil.get_terminal_size(fallback=(default, 24)).columns
+        return max(1, cols)
+    except Exception:
+        return max(1, default)
+
+
+def fit(text: str, width: int | None = None, fallback_title: str | None = None) -> str:
+    """Format and layout art or text to fit the terminal width.
+
+    Centres each line of the ASCII art if it fits within `width`.
+    If the art's maximum line width exceeds `width`, falls back to a plain text title
+    that fits comfortably within the narrow terminal without line-wrapping noise.
+
+    Args:
+        text: Multi-line ASCII art or string.
+        width: Available columns. Defaults to terminal_width().
+        fallback_title: Plain text title to display if art does not fit.
+
+    Returns:
+        Formatted string fitted to width. Never crashes for any width >= 1.
+    """
+    if width is None:
+        width = terminal_width()
+    width = max(1, width)
+
+    raw_lines = text.strip("\r\n").split("\n")
+    max_line_len = max((len(line.rstrip("\r")) for line in raw_lines), default=0)
+
+    if max_line_len <= width:
+        centered_lines: list[str] = []
+        for line in raw_lines:
+            stripped = line.rstrip("\r")
+            if not stripped.strip():
+                centered_lines.append("")
+            else:
+                pad = max(0, (width - len(stripped)) // 2)
+                centered_lines.append(" " * pad + stripped)
+        return "\n" + "\n".join(centered_lines) + "\n"
+
+    title = fallback_title or "Terminal Arcade"
+    if width < 6:
+        return title[:width]
+
+    divider = rule("=", min(width, max(len(title) + 4, 10)))
+    pad = max(0, (width - len(title)) // 2)
+    return f"\n{divider}\n{' ' * pad}{title[:width]}\n{divider}\n"
+
+
+def rule(char: str = "-", width: int | None = None) -> str:
+    """Build a divider by repeating the supplied text up to width.
+
+    Args:
+        char: The text to repeat. Defaults to "-".
+        width: Number of characters to fill. Defaults to terminal_width().
+
+    Returns:
+        The repeated text truncated to width, or empty string if width <= 0.
+    """
+    if width is None:
+        width = terminal_width()
+    if width <= 0 or not char:
+        return ""
+    repeats = (width // len(char)) + 1
+    return (char * repeats)[:width]
