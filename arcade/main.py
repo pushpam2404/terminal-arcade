@@ -1,4 +1,3 @@
-
 """The arcade menu — pick a game, play it, come back to the menu.
 
 Games are registered in GAMES below. Each entry points at a module that
@@ -12,15 +11,25 @@ import sys
 from types import ModuleType
 
 from arcade import __version__, art, scoreboard
-from arcade.games import coinflip, diceroll, eightball, guess, hangman, rps, scramble, tictactoe
+from arcade.games import (
+    coinflip,
+    diceroll,
+    eightball,
+    guess,
+    hangman,
+    rps,
+    rpsls,
+    scramble,
+    tictactoe,
+)
 from arcade.input_utils import ask, confirm, pause, read_key
-
 
 # To add a game: write arcade/games/yourgame.py, import it above, and add it
 GAMES: list[ModuleType] = [
     guess,
     hangman,
     rps,
+    rpsls,
     tictactoe,
     coinflip,
     diceroll,
