@@ -156,3 +156,33 @@ def test_menu_fits_in_24_rows(capsys):
     output = capsys.readouterr().out
     lines = output.strip().splitlines()
     assert len(lines) <= 24
+
+
+def test_the_menu_offers_statistics(capsys):
+    main.show_menu()
+    output = capsys.readouterr().out
+    assert "Statistics" in output
+
+
+def test_show_statistics_with_no_scores(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr("arcade.main.ask_int", lambda *args, **kwargs: 1)
+    main.show_statistics(scores_path=tmp_path / "empty.json")
+    out = capsys.readouterr().out
+    assert "No games of" in out
+
+
+def test_show_statistics_with_scores(tmp_path, capsys, monkeypatch):
+    from arcade import scoreboard
+
+    path = tmp_path / "scores.json"
+    game_name = main.GAMES[0].NAME
+    scoreboard.save_score(game_name, "player1", 40, path=path)
+    scoreboard.save_score(game_name, "player2", 80, path=path)
+
+    monkeypatch.setattr("arcade.main.ask_int", lambda *args, **kwargs: 1)
+    main.show_statistics(scores_path=path)
+    out = capsys.readouterr().out
+    assert "Games played:   2" in out
+    assert "Best score:     80" in out
+    assert "Average score:  60" in out
+

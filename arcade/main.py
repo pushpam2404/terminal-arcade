@@ -23,7 +23,7 @@ from arcade.games import (
     scramble,
     tictactoe,
 )
-from arcade.input_utils import ask, confirm, pause, read_key
+from arcade.input_utils import ask, ask_int, confirm, pause, read_key
 
 # To add a game: write arcade/games/yourgame.py, import it above, and add it
 GAMES: list[ModuleType] = [
@@ -54,8 +54,30 @@ def show_menu(scores_path: Path | None = None) -> None:
     print()
     print("  S. Surprise me")
     print(f"  H. High scores{score_suffix}")
+    print("  T. Statistics")
     print("  Q. Quit")
     print(art.dim("  Press Ctrl+C at any time to quit"))
+
+
+def show_statistics(scores_path: Path | None = None) -> None:
+    """Print per-game statistics."""
+    print(f"\n{art.bold('  GAME STATISTICS')}\n")
+    for number, game in enumerate(GAMES, start=1):
+        print(f"  {number}. {game.NAME}")
+    print()
+    choice = ask_int("  Which game? ", minimum=1, maximum=len(GAMES))
+    selected_game = GAMES[choice - 1]
+    stats = scoreboard.stats_for(selected_game.NAME, path=scores_path)
+
+    print(f"\n{art.bold(f'  {selected_game.NAME.upper()} STATS')}")
+    print(art.dim("  " + "-" * 32))
+    if stats["games_played"] == 0:
+        print(f"  No games of {selected_game.NAME} played yet.\n")
+    else:
+        print(f"  Games played:   {stats['games_played']}")
+        print(f"  Best score:     {stats['best_score']}")
+        print(f"  Average score:  {stats['average_score']}")
+        print(f"  Last played:    {stats['last_played']}\n")
 
 
 def show_high_scores() -> None:
@@ -96,6 +118,11 @@ def main() -> None:
 
         if key == "h":
             show_high_scores()
+            pause()
+            continue
+
+        if key == "t":
+            show_statistics()
             pause()
             continue
 
