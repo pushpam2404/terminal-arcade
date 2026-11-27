@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import random
 import sys
+from pathlib import Path
 from types import ModuleType
 
 from arcade import __version__, art, scoreboard
@@ -38,18 +39,23 @@ GAMES: list[ModuleType] = [
 ]
 
 
-def show_menu() -> None:
+def show_menu(scores_path: Path | None = None) -> None:
     """Print the list of games and the extra options."""
-    print(art.ARCADE_BANNER)
-    print(art.dim(f"  v{__version__}  ·  github-community-gitam\n"))
+    print(art.ARCADE_BANNER.strip("\r\n"))
+    print(art.dim(f"  v{__version__}  ·  github-community-gitam"))
 
     for number, game in enumerate(GAMES, start=1):
-        print(f"  {number}. {art.bold(game.NAME)}")
-        print(f"     {art.dim(game.DESCRIPTION)}")
+        print(f"  {number}. {art.bold(game.NAME)} - {art.dim(game.DESCRIPTION)}")
 
-    print("\n  S. Surprise me")
-    print("  H. High scores")
-    print("  Q. Quit\n")
+    scores = scoreboard.load_scores(scores_path)
+    count = len(scores)
+    score_suffix = f" ({count} played)" if count > 0 else ""
+
+    print()
+    print("  S. Surprise me")
+    print(f"  H. High scores{score_suffix}")
+    print("  Q. Quit")
+    print(art.dim("  Press Ctrl+C at any time to quit"))
 
 
 def show_high_scores() -> None:
