@@ -89,3 +89,61 @@ def test_outcome_message_for_a_draw_does_not_expose_none():
 def test_outcome_message_identifies_the_winner():
     assert ttt.outcome_message(ttt.PLAYER) == "  You win!\n"
     assert ttt.outcome_message(ttt.COMPUTER) == "  Computer wins!\n"
+
+
+def test_find_completing_square_finds_row_win():
+    board = ["O", "O", " ", " ", " ", " ", " ", " ", " "]
+    assert ttt.find_completing_square(board, ttt.COMPUTER) == 2
+
+
+def test_find_completing_square_returns_none_when_no_completing_move():
+    board = ["O", " ", " ", " ", " ", " ", " ", " ", " "]
+    assert ttt.find_completing_square(board, ttt.COMPUTER) is None
+
+
+def test_computer_takes_immediate_win():
+    board = ["O", "O", " ", "X", "X", " ", " ", " ", " "]
+    assert ttt.computer_move(board) == 2
+
+
+def test_computer_blocks_player_immediate_win():
+    board = ["X", "X", " ", "O", " ", " ", " ", " ", " "]
+    assert ttt.computer_move(board) == 2
+
+
+def test_computer_prefers_winning_over_blocking():
+    board = [
+        "X", "X", " ",
+        " ", " ", " ",
+        "O", "O", " ",
+    ]
+    assert ttt.computer_move(board) == 8
+
+
+def test_computer_prefers_centre_when_no_win_or_block():
+    board = [
+        "X", " ", " ",
+        " ", " ", " ",
+        " ", " ", " ",
+    ]
+    assert ttt.computer_move(board) == 4
+
+
+def test_computer_prefers_corners_when_centre_is_occupied():
+    board = [
+        " ", " ", " ",
+        " ", "X", " ",
+        " ", " ", " ",
+    ]
+    move = ttt.computer_move(board)
+    assert move in (0, 2, 6, 8)
+
+
+def test_computer_never_picks_an_occupied_square():
+    board = [
+        "X", "O", "X",
+        "O", "X", "O",
+        "O", "X", " ",
+    ]
+    assert ttt.computer_move(board) == 8
+
