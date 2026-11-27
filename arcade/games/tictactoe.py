@@ -14,7 +14,7 @@ from __future__ import annotations
 import random
 
 from arcade import art
-from arcade.input_utils import ask_int
+from arcade.input_utils import ask_choice, ask_int
 
 NAME = "Tic Tac Toe"
 DESCRIPTION = "The classic, against a computer that plays at random"
@@ -132,45 +132,170 @@ def find_completing_square(board: list[str], mark: str) -> int | None:
     return None
 
 
-def computer_move(board: list[str]) -> int:
-    """Choose a square for the computer using a three-rule strategy.
+def minimax(
+    board: list[str],
+    depth: int,
+    is_maximizing: bool,
+    alpha: float = float("-inf"),
+    beta: float = float("inf"),
+) -> int:
+    """Recursively score every reachable board state to choose the optimal move.
 
-    1. Win — if the computer has two in a line and the third is free, take it.
-    2. Block — if the player has two in a line and the third is free, take it.
-    3. Otherwise — prefer the centre, then a corner, then any free square.
+    How minimax works:
+    ------------------
+    Minimax is a game-theory algorithm for two-player, turn-based games of perfect
+    information (like Tic Tac Toe or Chess). One player wants to maximize their score
+    (the Computer, 'O'), while the other wants to minimize it (the Player, 'X').
+
+    At any given turn, the computer looks ahead into every legal move available:
+    1. Base cases (game over):
+       - If Computer ('O') wins: return +10 - depth. Subtracting depth rewards faster
+         wins over slower ones.
+       - If Player ('X') wins: return depth - 10. Adding depth rewards delaying a loss
+         as long as possible.
+       - If the board is full (draw): return 0.
+    2. Recursive step:
+       - On Computer's turn (maximizing): try each free square, call minimax recursively,
+         and select the move with the highest score.
+       - On Player's turn (minimizing): try each free square, call minimax recursively,
+         and select the move with the lowest score.
+
+    Alpha-beta pruning:
+    -------------------
+    'alpha' tracks the best score the maximizer is already guaranteed, and 'beta' tracks
+    the best score the minimizer is guaranteed. If beta <= alpha, the opponent would
+    never allow this branch of play to occur, so we prune (skip) the remaining moves in
+    this branch.
+
+    Args:
+        board: Nine squares representing the current board state.
+        depth: Number of moves explored from the starting state.
+        is_maximizing: True if it is Computer's turn ('O'), False if Player's ('X').
+        alpha: Best score the maximizer can guarantee so far.
+        beta: Best score the minimizer can guarantee so far.
+
+    Returns:
+        The minimax evaluation score for this board state.
+    """
+    win = winner(board)
+    if win == COMPUTER:
+        return 10 - depth
+    if win == PLAYER:
+        return depth - 10
+    if is_full(board):
+        return 0
+
+    if is_maximizing:
+        max_eval = float("-inf")
+        for sq in free_squares(board):
+            board[sq] = COMPUTER
+            eval_score = minimax(board, depth + 1, False, alpha, beta)
+            board[sq] = EMPTY
+            if eval_score > max_eval:
+                max_eval = eval_score
+            if max_eval > alpha:
+                alpha = max_eval
+            if beta <= alpha:
+                break
+        return int(max_eval)
+    else:
+        min_eval = float("inf")
+        for sq in free_squares(board):
+            board[sq] = PLAYER
+            eval_score = minimax(board, depth + 1, True, alpha, beta)
+            board[sq] = EMPTY
+            if eval_score < min_eval:
+                min_eval = eval_score
+            if min_eval < beta:
+                beta = min_eval
+            if beta <= alpha:
+                break
+        return int(min_eval)
+
+
+def minimax_move(board: list[str]) -> int:
+    """Determine the unbeatable move for the computer using minimax search.
 
     Args:
         board: The current board.
 
     Returns:
-        The index of the square to play.
+        The zero-based index of the chosen square.
     """
-    win = find_completing_square(board, COMPUTER)
-    if win is not None:
-        return win
+    best_score = float("-inf")
+    best_move = -1
 
-    block = find_completing_square(board, PLAYER)
-    if block is not None:
-        return block
+    for sq in free_squares(board):
+        board[sq] = COMPUTER
+        score = minimax(board, 0, False)
+        board[sq] = EMPTY
+        if score > best_score:
+            best_score = score
+            best_move = sq
 
-    if board[4] == EMPTY:
-        return 4
-
-    corners = [i for i in (0, 2, 6, 8) if board[i] == EMPTY]
-    if corners:
-        return random.choice(corners)
-
-    return random.choice(free_squares(board))
+    return best_move
 
 
-def play() -> int:
+def computer_move(board: list[str], difficulty: str = "impossible") -> int:
+    """Choose a square for the computer based on the selected difficulty.
+
+    - easy: Picks a random unoccupied square.
+    - medium: Three-rule heuristic (take win, block player win, center/corners).
+    - impossible: Unbeatable minimax search with alpha-beta pruning.
+
+    Args:
+        board: The current board.
+        difficulty: One of 'easy', 'medium', or 'impossible'.
+
+    Returns:
+        The zero-based index of the square to play.
+    """
+    diff = (difficulty or "impossible").lower()
+    if diff == "easy":
+        return random.choice(free_squares(board))
+
+    if diff in ("medium", "heuristic"):
+        win = find_completing_square(board, COMPUTER)
+        if win is not None:
+            return win
+
+        block = find_completing_square(board, PLAYER)
+        if block is not None:
+            return block
+
+        if board[4] == EMPTY:
+            return 4
+
+        corners = [i for i in (0, 2, 6, 8) if board[i] == EMPTY]
+        if corners:
+            return random.choice(corners)
+
+        return random.choice(free_squares(board))
+
+    return minimax_move(board)
+
+
+def play(difficulty: str | None = None) -> int:
     """Run one game of Tic Tac Toe.
+
+    Args:
+        difficulty: Optional difficulty level ('easy', 'medium', or 'impossible').
+                    If None, the player is asked to select one.
 
     Returns:
         100 points for a win, 0 otherwise.
     """
     print(art.TICTACTOE_BANNER)
-    print(f"\n  You are {PLAYER}. The computer is {COMPUTER}.")
+
+    if difficulty is None:
+        try:
+            difficulty = ask_choice(
+                "  Select difficulty", ["easy", "medium", "impossible"]
+            ).lower()
+        except (EOFError, Exception):
+            difficulty = "medium"
+
+    print(f"\n  You are {PLAYER}. The computer is {COMPUTER} ({difficulty.capitalize()}).")
 
     board = new_board()
     result = None
@@ -189,7 +314,7 @@ def play() -> int:
         if result is not None or is_full(board):
             break
 
-        move = computer_move(board)
+        move = computer_move(board, difficulty=difficulty)
         board[move] = COMPUTER
         print(art.dim(f"\n  Computer plays square {move + 1}."))
         result = winner(board)
