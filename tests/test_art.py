@@ -64,3 +64,13 @@ def test_fit_never_crashes_on_extreme_widths():
         assert isinstance(res, str)
         assert len(res) > 0
 
+
+def test_color_shortcuts_format_ansi_codes(monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+
+    assert art.blue("test") == f"{art.BLUE}test{art.RESET}"
+    assert art.magenta("test") == f"{art.MAGENTA}test{art.RESET}"
+    assert art.white("test") == f"{art.WHITE}test{art.RESET}"
+
+

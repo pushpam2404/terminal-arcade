@@ -22,7 +22,14 @@ LAST_PLAYER_PATH = Path.home() / ".terminal-arcade" / ".last_player"
 
 
 def _last_player_target(path: Path | None = None) -> Path:
-    """Determine the .last_player file path given an optional scores path."""
+    """Determine the .last_player file path given an optional scores path.
+
+    Args:
+        path: Optional custom scores path.
+
+    Returns:
+        Path to the corresponding .last_player file.
+    """
     if path is not None:
         target_dir = path.parent if (path.suffix or not path.is_dir()) else path
         return target_dir / ".last_player"
@@ -30,7 +37,14 @@ def _last_player_target(path: Path | None = None) -> Path:
 
 
 def get_last_player(path: Path | None = None) -> str | None:
-    """Return the last remembered player name, or None if none saved."""
+    """Return the last remembered player name, or None if none saved.
+
+    Args:
+        path: Optional custom scores path.
+
+    Returns:
+        The remembered player name, or None if unrecorded or missing.
+    """
     target = _last_player_target(path)
     try:
         if target.exists():
@@ -42,7 +56,12 @@ def get_last_player(path: Path | None = None) -> str | None:
 
 
 def save_last_player(name: str, path: Path | None = None) -> None:
-    """Remember the player name for future rounds."""
+    """Remember the player name for future rounds.
+
+    Args:
+        name: The player name to remember.
+        path: Optional custom scores path.
+    """
     stripped = name.strip()
     if not stripped:
         return
@@ -54,19 +73,36 @@ def save_last_player(name: str, path: Path | None = None) -> None:
         pass
 
 
-
 def is_sqlite_enabled() -> bool:
-    """Return True if the SQLite scores backend is activated."""
+    """Return True if the SQLite scores backend is activated.
+
+    Returns:
+        True when ARCADE_STORAGE environment variable is set to 'sqlite'.
+    """
     return os.environ.get("ARCADE_STORAGE", "").strip().lower() == "sqlite"
 
 
 def _sqlite_target(path: Path | None = None) -> Path:
-    """Determine the SQLite database path given an optional override path."""
+    """Determine the SQLite database path given an optional override path.
+
+    Args:
+        path: Optional override path (either JSON or DB).
+
+    Returns:
+        Path ending in .db pointing to the target SQLite database.
+    """
     if path is not None:
         if path.suffix == ".db":
             return path
         return path.with_suffix(".db")
     return SQLITE_SCORES_PATH
+
+
+def _ensure_file() -> None:
+    """Create the scores file and its folder if they do not exist yet."""
+    SCORES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not SCORES_PATH.exists():
+        SCORES_PATH.write_text("[]", encoding="utf-8")
 
 
 def _init_sqlite_db(db_path: Path, json_source: Path | None = None) -> sqlite3.Connection:
@@ -255,7 +291,14 @@ def top_scores(
         scores = [s for s in scores if s.get("game") == game]
 
     def numeric_score(entry: dict[str, Any]) -> float:
-        """Read legacy numeric strings, treating invalid scores as zero."""
+        """Read legacy numeric strings, treating invalid scores as zero.
+
+        Args:
+            entry: A score entry dictionary containing a 'score' key.
+
+        Returns:
+            The parsed floating-point score value, or 0.0 if invalid.
+        """
         try:
             score = float(entry.get("score", 0))
         except (TypeError, ValueError, OverflowError):
@@ -289,6 +332,14 @@ def scores_for_player(
     ]
 
     def numeric_score(entry: dict[str, Any]) -> float:
+        """Read legacy numeric strings, treating invalid scores as zero.
+
+        Args:
+            entry: A score entry dictionary containing a 'score' key.
+
+        Returns:
+            The parsed floating-point score value, or 0.0 if invalid.
+        """
         try:
             score = float(entry.get("score", 0))
         except (TypeError, ValueError, OverflowError):
@@ -354,12 +405,26 @@ def stats_for(game: str, path: Path | None = None) -> dict[str, Any]:
 
 
 def _char_width(char: str) -> int:
-    """Return the terminal display width of a single character."""
+    """Return the terminal display width of a single character.
+
+    Args:
+        char: A single unicode character.
+
+    Returns:
+        2 for East Asian wide/fullwidth characters, otherwise 1.
+    """
     return 2 if unicodedata.east_asian_width(char) in ("W", "F") else 1
 
 
 def _str_width(text: str) -> int:
-    """Return the terminal display width of a string."""
+    """Return the terminal display width of a string.
+
+    Args:
+        text: The string to measure.
+
+    Returns:
+        Total number of terminal display columns occupied by text.
+    """
     return sum(_char_width(c) for c in text)
 
 
@@ -368,6 +433,13 @@ def _format_name(name: str, width: int = 14) -> str:
 
     If the name exceeds `width` display columns, it is truncated with an
     ellipsis ('…') so the total display width is exactly `width`.
+
+    Args:
+        name: The player name string to format.
+        width: Target display column width. Defaults to 14.
+
+    Returns:
+        String padded and/or truncated to fit exactly `width` columns.
     """
     total_width = _str_width(name)
     if total_width <= width:

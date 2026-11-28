@@ -53,6 +53,13 @@ def reason(winner: str, loser: str) -> str:
 
     Example:
         reason("lizard", "spock") -> "lizard poisons spock"
+
+    Args:
+        winner: The winning move name.
+        loser: The defeated move name.
+
+    Returns:
+        An explanatory string, e.g. 'lizard poisons spock'.
     """
     verb = VERBS.get((winner, loser), "beats")
     return f"{winner} {verb} {loser}"

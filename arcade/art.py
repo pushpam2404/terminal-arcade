@@ -107,6 +107,42 @@ def cyan(text: str) -> str:
     return colour(text, CYAN)
 
 
+def blue(text: str) -> str:
+    """Apply the blue terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the blue style and a reset, or unchanged text when disabled.
+    """
+    return colour(text, BLUE)
+
+
+def magenta(text: str) -> str:
+    """Apply the magenta terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the magenta style and a reset, or unchanged text when disabled.
+    """
+    return colour(text, MAGENTA)
+
+
+def white(text: str) -> str:
+    """Apply the white terminal style when colours are enabled.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Text with the white style and a reset, or unchanged text when disabled.
+    """
+    return colour(text, WHITE)
+
+
 def bold(text: str) -> str:
     """Apply the bold terminal style when colours are enabled.
 

@@ -55,7 +55,15 @@ def mask_word(word: str, guessed: set[str]) -> str:
 
 
 def is_solved(word: str, guessed: set[str]) -> bool:
-    """Return True if every letter in the word has been guessed."""
+    """Return True if every letter in the word has been guessed.
+
+    Args:
+        word: The secret target word.
+        guessed: Set of letters already guessed by the player.
+
+    Returns:
+        True if all letters in word are present in guessed, False otherwise.
+    """
     return all(letter in guessed for letter in word)
 
 

@@ -90,7 +90,11 @@ GAMES: list[ModuleType] = discover_games()
 
 
 def show_menu(scores_path: Path | None = None) -> None:
-    """Print the list of games and the extra options."""
+    """Print the list of games and the extra options.
+
+    Args:
+        scores_path: Optional custom path to scores storage. Defaults to None.
+    """
     print(art.fit(art.ARCADE_BANNER, fallback_title="Terminal Arcade").strip("\r\n"))
     print(art.dim(f"  v{__version__}  ·  github-community-gitam"))
 
@@ -110,7 +114,11 @@ def show_menu(scores_path: Path | None = None) -> None:
 
 
 def show_statistics(scores_path: Path | None = None) -> None:
-    """Print per-game statistics."""
+    """Print per-game statistics.
+
+    Args:
+        scores_path: Optional custom path to scores storage. Defaults to None.
+    """
     print(f"\n{art.bold('  GAME STATISTICS')}\n")
     for number, game in enumerate(GAMES, start=1):
         print(f"  {number}. {game.NAME}")
@@ -131,7 +139,11 @@ def show_statistics(scores_path: Path | None = None) -> None:
 
 
 def show_high_scores(scores_path: Path | None = None) -> None:
-    """Print the overall top scores, with an optional player filter."""
+    """Print the overall top scores, with an optional player filter.
+
+    Args:
+        scores_path: Optional custom path to scores storage. Defaults to None.
+    """
     print(f"\n{art.bold('  HIGH SCORES')}\n")
     print(scoreboard.format_scoreboard(scoreboard.top_scores(limit=10, path=scores_path)))
     print()
@@ -159,7 +171,12 @@ def show_high_scores(scores_path: Path | None = None) -> None:
 
 
 def run_game(game: ModuleType, scores_path: Path | None = None) -> None:
-    """Play one game and offer to save the score."""
+    """Play one game and offer to save the score.
+
+    Args:
+        game: The game module to execute.
+        scores_path: Optional custom path to scores storage. Defaults to None.
+    """
     print()
     score = game.play()
 
