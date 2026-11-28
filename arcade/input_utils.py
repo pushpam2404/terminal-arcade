@@ -22,6 +22,9 @@ def _handle_interrupt(exc: BaseException) -> None:
     """Print a goodbye message to stderr and exit cleanly.
 
     Ctrl+C exits with status 130; Ctrl+D exits with status 0.
+
+    Args:
+        exc: The interrupt exception (KeyboardInterrupt or EOFError).
     """
     print("\nGoodbye!", file=sys.stderr)
     if isinstance(exc, KeyboardInterrupt):
@@ -29,7 +32,16 @@ def _handle_interrupt(exc: BaseException) -> None:
     sys.exit(0)
 
 def read_key(prompt: str = "") -> str:
-    """Read a single keypress without requiring Enter."""
+    """Read a single keypress without requiring Enter.
+
+    Falls back to input() when standard input is not a terminal (e.g. piped input).
+
+    Args:
+        prompt: Optional prompt text to display before reading. Defaults to "".
+
+    Returns:
+        A single character typed by the user.
+    """
     if not sys.stdin.isatty():
         return input(prompt)
 
@@ -115,7 +127,14 @@ def ask_choice(prompt: str, choices: list[str]) -> str:
 
 
 def ask_letter(prompt: str) -> str:
-    """Ask for a single letter A-Z and return it in lowercase."""
+    """Ask for a single letter A-Z and return it in lowercase.
+
+    Args:
+        prompt: The question or instruction to show.
+
+    Returns:
+        A single lowercase alphabetic character.
+    """
     while True:
         raw = ask(prompt).lower()
         if len(raw) == 1 and raw.isalpha():
@@ -124,13 +143,24 @@ def ask_letter(prompt: str) -> str:
 
 
 def confirm(prompt: str) -> bool:
-    """Ask a yes/no question. Returns True for yes."""
+    """Ask a yes/no question and return whether the player answered yes.
+
+    Args:
+        prompt: The question to ask.
+
+    Returns:
+        True if the player answered 'y' or 'Y', False if 'n' or 'N'.
+    """
     answer = ask_choice(prompt, ["y", "n"])
     return answer == "y"
 
 
 def pause(message: str = "Press Enter to continue...") -> None:
-    """Wait for the player to press Enter."""
+    """Wait for the player to press Enter before continuing.
+
+    Args:
+        message: The message prompt to display in dim text. Defaults to "Press Enter to continue...".
+    """
     try:
         input(art.dim(message))
     except (KeyboardInterrupt, EOFError) as exc:

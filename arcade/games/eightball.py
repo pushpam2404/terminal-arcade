@@ -28,12 +28,20 @@ ANSWERS = [
 
 
 def get_answer() -> str:
-    """Return a random Magic 8-Ball answer."""
+    """Return a random Magic 8-Ball answer.
+
+    Returns:
+        A mysterious prediction string selected from ANSWERS.
+    """
     return random.choice(ANSWERS)
 
 
 def play() -> int:
-    """Run one round of Magic 8-Ball."""
+    """Run one round of Magic 8-Ball.
+
+    Returns:
+        Always returns 0 as Magic 8-Ball is an oracle experience without scoring.
+    """
     print("\n  Ask the Magic 8-Ball a question.\n")
     question = ask("  Your question:")
 

@@ -105,7 +105,14 @@ def is_full(board: list[str]) -> bool:
 
 
 def outcome_message(result: str | None) -> str:
-    """Return the user-facing message for a completed game."""
+    """Return the user-facing message for a completed game.
+
+    Args:
+        result: The winning mark (PLAYER 'X', COMPUTER 'O'), or None if draw.
+
+    Returns:
+        Formatted outcome message string with a trailing newline.
+    """
     if result == PLAYER:
         return "  You win!\n"
     if result == COMPUTER:

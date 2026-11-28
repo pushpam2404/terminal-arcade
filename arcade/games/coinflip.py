@@ -17,7 +17,11 @@ ROUNDS = 3
 
 
 def flip() -> str:
-    """Flip a coin. Returns "heads" or "tails"."""
+    """Flip a coin.
+
+    Returns:
+        Either 'heads' or 'tails' with equal probability.
+    """
     return random.choice(["heads", "tails"])
 
 
