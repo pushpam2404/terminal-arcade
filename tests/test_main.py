@@ -253,3 +253,58 @@ def test_discover_games_order_is_deterministic():
     assert order1 == order2
 
 
+def test_run_game_remembers_player_and_defaults_on_enter(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from arcade import scoreboard
+
+    scores_path = tmp_path / "scores.json"
+    dummy_game = SimpleNamespace(NAME="TestGame", play=lambda: 100)
+
+    # First game: player enters "Asha"
+    prompts = []
+
+    def fake_ask_first(prompt):
+        prompts.append(prompt)
+        return "Asha"
+
+    monkeypatch.setattr("arcade.main.ask", fake_ask_first)
+    monkeypatch.setattr("arcade.main.confirm", lambda prompt: prompt.startswith("  Save"))
+    monkeypatch.setattr("arcade.main.pause", lambda: None)
+
+    main.run_game(dummy_game, scores_path=scores_path)
+    assert scoreboard.get_last_player(scores_path) == "Asha"
+    assert "Your name:" in prompts[0]
+
+    # Second game: player presses Enter (empty string)
+    prompts.clear()
+
+    def fake_ask_second(prompt):
+        prompts.append(prompt)
+        return ""  # Enter accepted
+
+    monkeypatch.setattr("arcade.main.ask", fake_ask_second)
+    main.run_game(dummy_game, scores_path=scores_path)
+
+    scores = scoreboard.load_scores(scores_path)
+    assert len(scores) == 2
+    assert scores[1]["player"] == "Asha"
+    assert "Your name [Asha]:" in prompts[0]
+
+
+def test_show_high_scores_filters_by_player(tmp_path, capsys, monkeypatch):
+    from arcade import scoreboard
+
+    scores_path = tmp_path / "scores.json"
+    scoreboard.save_score("guess", "Asha", 50, path=scores_path)
+    scoreboard.save_score("hangman", "Bob", 70, path=scores_path)
+
+    # Ask will filter by "Asha"
+    monkeypatch.setattr("arcade.main.ask", lambda prompt: "Asha")
+    main.show_high_scores(scores_path=scores_path)
+
+    out = capsys.readouterr().out
+    assert "HIGH SCORES" in out
+    assert "SCORES FOR ASHA" in out
+
+
+

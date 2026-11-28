@@ -350,4 +350,62 @@ def test_sqlite_concurrent_writes(tmp_path, monkeypatch):
     assert {s["score"] for s in scores} == {i * 10 for i in range(20)}
 
 
+def test_last_player_initially_none(tmp_path):
+    target = tmp_path / "scores.json"
+    assert scoreboard.get_last_player(path=target) is None
+
+
+def test_save_and_get_last_player(tmp_path):
+    target = tmp_path / "scores.json"
+    scoreboard.save_last_player("Asha", path=target)
+    assert scoreboard.get_last_player(path=target) == "Asha"
+
+
+def test_save_score_remembers_last_player(tmp_path):
+    target = tmp_path / "scores.json"
+    scoreboard.save_score("guess", "Alex", 80, path=target)
+    assert scoreboard.get_last_player(path=target) == "Alex"
+
+
+def test_scores_for_player_filters_and_sorts(tmp_path):
+    target = tmp_path / "scores.json"
+    scoreboard.save_score("guess", "Asha", 50, path=target)
+    scoreboard.save_score("hangman", "Bob", 70, path=target)
+    scoreboard.save_score("tictactoe", "Asha", 100, path=target)
+    scoreboard.save_score("rps", "Charlie", 30, path=target)
+
+    asha_scores = scoreboard.scores_for_player("Asha", path=target)
+    assert len(asha_scores) == 2
+    assert asha_scores[0]["score"] == 100
+    assert asha_scores[0]["game"] == "tictactoe"
+    assert asha_scores[1]["score"] == 50
+    assert asha_scores[1]["game"] == "guess"
+
+
+def test_scores_for_player_case_insensitive_and_whitespace(tmp_path):
+    target = tmp_path / "scores.json"
+    scoreboard.save_score("guess", "Asha", 50, path=target)
+
+    # Match lowercase, uppercase, and with surrounding spaces
+    assert len(scoreboard.scores_for_player("asha", path=target)) == 1
+    assert len(scoreboard.scores_for_player("ASHA", path=target)) == 1
+    assert len(scoreboard.scores_for_player("  Asha  ", path=target)) == 1
+    assert len(scoreboard.scores_for_player("Nobody", path=target)) == 0
+
+
+def test_scores_for_player_with_sqlite_backend(tmp_path, monkeypatch):
+    monkeypatch.setenv("ARCADE_STORAGE", "sqlite")
+    target = tmp_path / "scores.db"
+
+    scoreboard.save_score("guess", "PlayerX", 40, path=target)
+    scoreboard.save_score("hangman", "PlayerY", 90, path=target)
+    scoreboard.save_score("guess", "playerx", 85, path=target)
+
+    scores = scoreboard.scores_for_player("playerx", path=target)
+    assert len(scores) == 2
+    assert scores[0]["score"] == 85
+    assert scores[1]["score"] == 40
+
+
+
 

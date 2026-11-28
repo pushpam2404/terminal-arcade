@@ -10,6 +10,7 @@ import json
 import math
 import os
 import sqlite3
+import time
 import unicodedata
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +18,41 @@ from typing import Any
 
 SCORES_PATH = Path.home() / ".terminal-arcade" / "scores.json"
 SQLITE_SCORES_PATH = Path.home() / ".terminal-arcade" / "scores.db"
+LAST_PLAYER_PATH = Path.home() / ".terminal-arcade" / ".last_player"
+
+
+def _last_player_target(path: Path | None = None) -> Path:
+    """Determine the .last_player file path given an optional scores path."""
+    if path is not None:
+        target_dir = path.parent if (path.suffix or not path.is_dir()) else path
+        return target_dir / ".last_player"
+    return LAST_PLAYER_PATH
+
+
+def get_last_player(path: Path | None = None) -> str | None:
+    """Return the last remembered player name, or None if none saved."""
+    target = _last_player_target(path)
+    try:
+        if target.exists():
+            name = target.read_text(encoding="utf-8").strip()
+            return name if name else None
+    except OSError:
+        return None
+    return None
+
+
+def save_last_player(name: str, path: Path | None = None) -> None:
+    """Remember the player name for future rounds."""
+    stripped = name.strip()
+    if not stripped:
+        return
+    target = _last_player_target(path)
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(stripped, encoding="utf-8")
+    except OSError:
+        pass
+
 
 
 def is_sqlite_enabled() -> bool:
@@ -163,6 +199,8 @@ def save_score(
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
     }
 
+    save_last_player(player, path=path)
+
     if is_sqlite_enabled():
         db_path = _sqlite_target(path)
         json_src = (
@@ -170,17 +208,20 @@ def save_score(
             if (path and path.suffix == ".json")
             else (db_path.with_suffix(".json") if db_path.suffix == ".db" else SCORES_PATH)
         )
-        try:
-            conn = _init_sqlite_db(db_path, json_source=json_src)
-            with conn:
-                conn.execute(
-                    "INSERT INTO scores (game, player, score, date) VALUES (?, ?, ?, ?)",
-                    (entry["game"], entry["player"], float(entry["score"]), entry["date"]),
-                )
-            conn.close()
-            return entry
-        except (sqlite3.DatabaseError, sqlite3.OperationalError, OSError):
-            return entry
+        for attempt in range(5):
+            try:
+                conn = _init_sqlite_db(db_path, json_source=json_src)
+                with conn:
+                    conn.execute(
+                        "INSERT INTO scores (game, player, score, date) VALUES (?, ?, ?, ?)",
+                        (entry["game"], entry["player"], float(entry["score"]), entry["date"]),
+                    )
+                conn.close()
+                return entry
+            except (sqlite3.DatabaseError, sqlite3.OperationalError, OSError):
+                if attempt == 4:
+                    return entry
+                time.sleep(0.02 * (attempt + 1))
 
     target = path or SCORES_PATH
     if path is None:
@@ -223,6 +264,38 @@ def top_scores(
 
     ranked = sorted(scores, key=numeric_score, reverse=True)
     return ranked[:limit]
+
+
+def scores_for_player(
+    player: str,
+    path: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Return all scores saved for a particular player, highest first.
+
+    Matching is case-insensitive and ignores leading/trailing whitespace.
+
+    Args:
+        player: The player name to filter by.
+        path: Where to read from. Defaults to the player's scores file.
+
+    Returns:
+        List of score entries for that player, highest score first.
+    """
+    normalized = player.strip().casefold()
+    scores = load_scores(path)
+    matched = [
+        s for s in scores
+        if str(s.get("player", "")).strip().casefold() == normalized
+    ]
+
+    def numeric_score(entry: dict[str, Any]) -> float:
+        try:
+            score = float(entry.get("score", 0))
+        except (TypeError, ValueError, OverflowError):
+            return 0.0
+        return score if math.isfinite(score) else 0.0
+
+    return sorted(matched, key=numeric_score, reverse=True)
 
 
 def stats_for(game: str, path: Path | None = None) -> dict[str, Any]:
