@@ -130,14 +130,35 @@ def show_statistics(scores_path: Path | None = None) -> None:
         print(f"  Last played:    {stats['last_played']}\n")
 
 
-def show_high_scores() -> None:
-    """Print the overall top scores."""
+def show_high_scores(scores_path: Path | None = None) -> None:
+    """Print the overall top scores, with an optional player filter."""
     print(f"\n{art.bold('  HIGH SCORES')}\n")
-    print(scoreboard.format_scoreboard(scoreboard.top_scores(limit=10)))
+    print(scoreboard.format_scoreboard(scoreboard.top_scores(limit=10, path=scores_path)))
     print()
+    default_player = scoreboard.get_last_player(scores_path)
+    prompt = (
+        f"  Filter by player (Enter to skip) [{default_player}]: "
+        if default_player
+        else "  Filter by player (Enter to skip): "
+    )
+    filter_name = ask(prompt).strip()
+    if not filter_name and default_player:
+        # If user pressed enter and there is a default player, don't auto-filter unless requested,
+        # but if they typed '.', use the default.
+        pass
+    if filter_name:
+        if filter_name == "." and default_player:
+            filter_name = default_player
+        player_scores = scoreboard.scores_for_player(filter_name, path=scores_path)
+        if player_scores:
+            print(f"\n{art.bold(f'  SCORES FOR {filter_name.upper()}')}\n")
+            print(scoreboard.format_scoreboard(player_scores))
+            print()
+        else:
+            print(f"\n  No scores found for '{filter_name}'.\n")
 
 
-def run_game(game: ModuleType) -> None:
+def run_game(game: ModuleType, scores_path: Path | None = None) -> None:
     """Play one game and offer to save the score."""
     print()
     score = game.play()
@@ -145,8 +166,11 @@ def run_game(game: ModuleType) -> None:
     while True:
         if score and score > 0:
             if confirm("  Save this score to the scoreboard?"):
-                name = ask("  Your name:").strip() or "anonymous"
-                scoreboard.save_score(game.NAME, name, score)
+                default_name = scoreboard.get_last_player(scores_path)
+                prompt = f"  Your name [{default_name}]:" if default_name else "  Your name:"
+                entered = ask(prompt).strip()
+                name = entered if entered else (default_name or "anonymous")
+                scoreboard.save_score(game.NAME, name, score, path=scores_path)
                 print(art.green("  Saved.\n"))
                 pause()
 
