@@ -74,3 +74,24 @@ def test_color_shortcuts_format_ansi_codes(monkeypatch):
     assert art.white("test") == f"{art.WHITE}test{art.RESET}"
 
 
+def test_all_game_banners_are_under_60_characters_wide():
+    banners = [
+        art.ARCADE_BANNER,
+        art.GUESS_BANNER,
+        art.HANGMAN_BANNER,
+        art.RPS_BANNER,
+        art.TICTACTOE_BANNER,
+        art.COINFLIP_BANNER,
+        art.DICEROLL_BANNER,
+        art.EIGHTBALL_BANNER,
+        art.SCRAMBLE_BANNER,
+        art.RPSLS_BANNER,
+    ]
+    for b in banners:
+        assert isinstance(b, str)
+        assert len(b.strip()) > 0
+        for line in b.splitlines():
+            assert len(line) <= 60, f"Banner line too wide ({len(line)} > 60): {line}"
+
+
+

@@ -31,7 +31,7 @@ def play() -> int:
     Returns:
         The player's score. 0 if they got one wrong.
     """
-    print(art.banner("COIN FLIP"))
+    print(art.fit(art.COINFLIP_BANNER, fallback_title="Coin Flip").strip("\r\n"))
     print(f"\n  Call it right {ROUNDS} times in a row.\n")
 
     for round_number in range(1, ROUNDS + 1):
