@@ -7,36 +7,86 @@ provides NAME, DESCRIPTION, and a play() function returning a score.
 from __future__ import annotations
 
 import random
+import importlib
+import pkgutil
 import sys
 from pathlib import Path
 from types import ModuleType
 
 from arcade import __version__, art, scoreboard
-from arcade.games import (
-    coinflip,
-    diceroll,
-    eightball,
-    guess,
-    hangman,
-    rps,
-    rpsls,
-    scramble,
-    tictactoe,
-)
+import arcade.games
 from arcade.input_utils import ask, ask_int, confirm, pause, read_key
 
-# To add a game: write arcade/games/yourgame.py, import it above, and add it
-GAMES: list[ModuleType] = [
-    guess,
-    hangman,
-    rps,
-    rpsls,
-    tictactoe,
-    coinflip,
-    diceroll,
-    eightball,
-    scramble,
+CANONICAL_ORDER = [
+    "guess",
+    "hangman",
+    "rps",
+    "rpsls",
+    "tictactoe",
+    "coinflip",
+    "diceroll",
+    "eightball",
+    "scramble",
 ]
+
+
+def discover_games(package=arcade.games) -> list[ModuleType]:
+    """Discover and return all valid game modules from arcade.games.
+
+    Modules starting with '_' are ignored.
+    Modules missing NAME, DESCRIPTION, or play are skipped with a warning.
+    Modules with syntax or import errors are skipped with a warning.
+    Results are sorted deterministically so menu order remains stable.
+
+    Args:
+        package: The package containing game modules. Defaults to arcade.games.
+
+    Returns:
+        A list of valid game modules.
+    """
+    discovered: list[ModuleType] = []
+
+    for module_info in pkgutil.iter_modules(package.__path__):
+        name = module_info.name
+        if name.startswith("_"):
+            continue
+
+        full_name = f"{package.__name__}.{name}"
+        try:
+            mod = importlib.import_module(full_name)
+        except Exception as err:
+            print(f"Warning: could not import game module '{name}': {err}", file=sys.stderr)
+            continue
+
+        missing = [attr for attr in ("NAME", "DESCRIPTION", "play") if not hasattr(mod, attr)]
+        if missing:
+            print(
+                f"Warning: skipping game module '{name}': missing {', '.join(missing)}",
+                file=sys.stderr,
+            )
+            continue
+
+        if not callable(getattr(mod, "play", None)):
+            print(
+                f"Warning: skipping game module '{name}': 'play' is not callable",
+                file=sys.stderr,
+            )
+            continue
+
+        discovered.append(mod)
+
+    discovered.sort(
+        key=lambda m: (
+            CANONICAL_ORDER.index(m.__name__.rsplit(".", 1)[-1])
+            if m.__name__.rsplit(".", 1)[-1] in CANONICAL_ORDER
+            else 999,
+            m.__name__,
+        )
+    )
+    return discovered
+
+
+GAMES: list[ModuleType] = discover_games()
 
 
 def show_menu(scores_path: Path | None = None) -> None:

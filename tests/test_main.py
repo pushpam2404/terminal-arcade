@@ -186,3 +186,70 @@ def test_show_statistics_with_scores(tmp_path, capsys, monkeypatch):
     assert "Best score:     80" in out
     assert "Average score:  60" in out
 
+
+def test_discover_games_finds_all_standard_games():
+    games = main.discover_games()
+    names = {g.__name__.rsplit(".", 1)[-1] for g in games}
+    expected = {"guess", "hangman", "rps", "rpsls", "tictactoe", "coinflip", "diceroll", "eightball", "scramble"}
+    assert expected.issubset(names)
+
+
+def test_discover_games_skips_underscore_modules(tmp_path, monkeypatch, capsys):
+    pkg_dir = tmp_path / "fake_games"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("", encoding="utf-8")
+    (pkg_dir / "_internal.py").write_text("NAME = 'Internal'\nDESCRIPTION = 'x'\ndef play(): pass", encoding="utf-8")
+    (pkg_dir / "valid.py").write_text("NAME = 'Valid'\nDESCRIPTION = 'desc'\ndef play(): return 0", encoding="utf-8")
+
+    import sys
+    monkeypatch.syspath_prepend(str(tmp_path))
+    import importlib
+    fake_pkg = importlib.import_module("fake_games")
+
+    games = main.discover_games(package=fake_pkg)
+    names = [g.NAME for g in games]
+    assert "Valid" in names
+    assert "Internal" not in names
+
+
+def test_discover_games_warns_and_skips_incomplete_module(tmp_path, monkeypatch, capsys):
+    pkg_dir = tmp_path / "incomplete_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("", encoding="utf-8")
+    (pkg_dir / "bad_game.py").write_text("NAME = 'Bad'\n# missing DESCRIPTION and play", encoding="utf-8")
+
+    monkeypatch.syspath_prepend(str(tmp_path))
+    import importlib
+    fake_pkg = importlib.import_module("incomplete_pkg")
+
+    games = main.discover_games(package=fake_pkg)
+    assert len(games) == 0
+
+    err = capsys.readouterr().err
+    assert "missing" in err.lower()
+    assert "bad_game" in err
+
+
+def test_discover_games_warns_and_skips_broken_syntax(tmp_path, monkeypatch, capsys):
+    pkg_dir = tmp_path / "broken_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("", encoding="utf-8")
+    (pkg_dir / "syntax_error.py").write_text("def broken(: invalid python syntax", encoding="utf-8")
+
+    monkeypatch.syspath_prepend(str(tmp_path))
+    import importlib
+    fake_pkg = importlib.import_module("broken_pkg")
+
+    games = main.discover_games(package=fake_pkg)
+    assert len(games) == 0
+
+    err = capsys.readouterr().err
+    assert "syntax_error" in err
+
+
+def test_discover_games_order_is_deterministic():
+    order1 = [g.NAME for g in main.discover_games()]
+    order2 = [g.NAME for g in main.discover_games()]
+    assert order1 == order2
+
+
