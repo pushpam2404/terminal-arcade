@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 
+from arcade import art
 from arcade.input_utils import ask
 
 NAME = "Magic 8-Ball"
@@ -42,6 +43,7 @@ def play() -> int:
     Returns:
         Always returns 0 as Magic 8-Ball is an oracle experience without scoring.
     """
+    print(art.fit(art.EIGHTBALL_BANNER, fallback_title="Magic 8-Ball").strip("\r\n"))
     print("\n  Ask the Magic 8-Ball a question.\n")
     question = ask("  Your question:")
 

@@ -90,7 +90,11 @@ def play() -> int:
     Returns:
         The player's score: 20 points per round won.
     """
-    print(art.banner("ROCK PAPER SCISSORS LIZARD SPOCK"))
+    print(
+        art.fit(
+            art.RPSLS_BANNER, fallback_title="Rock Paper Scissors Lizard Spock"
+        ).strip("\r\n")
+    )
     print(f"\n  First to win the most of {ROUNDS} rounds.\n")
 
     player_wins = 0

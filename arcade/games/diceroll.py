@@ -35,7 +35,7 @@ def play() -> int:
     Returns:
         Points earned for how closely the dice match the target.
     """
-    print(art.banner("DICE ROLL"))
+    print(art.fit(art.DICEROLL_BANNER, fallback_title="Dice Roll").strip("\r\n"))
     target = ask_int("  Pick a target total (2–12):", minimum=2, maximum=12)
     first = random.randint(1, 6)
     second = random.randint(1, 6)

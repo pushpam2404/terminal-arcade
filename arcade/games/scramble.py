@@ -63,7 +63,7 @@ def play() -> int:
         The points earned for a correct guess, or zero if all attempts fail.
     """
 
-    print(art.banner("SCRAMBLE"))
+    print(art.fit(art.SCRAMBLE_BANNER, fallback_title="Word Scramble").strip("\r\n"))
 
     word = random.choice(WORDS)
     shuffled_word = shuffle_word(word)
